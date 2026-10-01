@@ -5,6 +5,9 @@
   source2viewer-cli,
   deadlock-resourcecompiler,
   deadlock-csdk,
+  name ? "deadlock-modbox",
+  patches ? null,
+  vpkName ? "pak75_dir.vpk",
 }:
 
 let
@@ -13,8 +16,10 @@ let
   gameMount = "/deadlock";
 in
 stdenvNoCC.mkDerivation {
-  name = "deadlock-modbox";
+  inherit name;
   src = ../..;
+  PATCHES = if patches == null then "mods/*.patch" else builtins.toString patches;
+  VPKNAME = vpkName;
   # Sandboxed build; the game dir arrives via extra-sandbox-paths (a hidden
   # input by design here - the game version IS the input, see README).
   GAME_MOUNT = gameMount;
@@ -33,6 +38,6 @@ stdenvNoCC.mkDerivation {
   '';
   installPhase = ''
     mkdir -p $out
-    cp "$T/pak73_dir.vpk" $out/pak73_dir.vpk
+    cp "$T"/*.vpk $out/
   '';
 }

@@ -15,7 +15,7 @@ cp "$CSDK_DIR/game/core/panorama/panorama_config.txt" \
 export WINEPREFIX="$T/wineprefix"
 export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 N=0
-for P in mods/*.patch; do
+for P in $PATCHES; do
   N=$((N + 1)); W="$T/work-$N"
   TARGETS=$(grep '^--- a/' "$P" | cut -d/ -f2-)
   [ -n "$TARGETS" ] || { echo "$P has no diff paths" >&2; exit 1; }
@@ -45,4 +45,4 @@ for P in mods/*.patch; do
     cp "$OUT" "$T/stage/$TARGET"
   done
 done
-vpk "$T/pak73_dir.vpk" -c "$T/stage"
+vpk "$T/$VPKNAME" -c "$T/stage"

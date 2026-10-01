@@ -14,11 +14,11 @@ Detect mod collisions at build time. Mods are compiled and merged into a single 
 
 ## Mod list in this repository
 
-- **Always show ability suggestions** — Deadlock marks the next upgrade
-  your build wants with a small badge, but normally shows it only when
-  you open the details view. This shows it all the time.
-- **Instant ESC** — removes the open/close animations from the pause
-  menu, it opens instantly.
+- **Always show ability suggestions** - Deadlock marks the
+  next upgrade your build wants with a small badge, but normally shows
+  it only when you open the details view. This shows it all the time.
+- **Instant ESC** - removes the open/close
+  animations from the pause menu, it opens instantly.
 
 Q: Only 2 mods?\
 A: Currently yes :P. But the point is to spread the idea. Hopefully we will get more mods as .patch files with time!
@@ -28,9 +28,14 @@ A: Currently yes :P. But the point is to spread the idea. Hopefully we will get 
 You need [Nix](https://nixos.org/download/) and the game installed
 through Steam.
 
-Then, building .vpk from `./mods` directory is done end-to-end by 1 command:
+Then, building .vpk from `./mods` directory is done end-to-end by following commands:
 ```bash
+# build all mods in ./mods directory as one .vpk
 ./build.sh
+
+# build only a specific mod into a .vpk
+./build.sh always-show-ability-suggestions
+./build.sh instant-esc
 ```
 
 This produces `result/pak73_dir.vpk`. Take this file and install it with your mod manager (I recommend Grimoire).

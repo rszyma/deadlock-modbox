@@ -14,11 +14,40 @@
       };
     in
     {
-      packages = forAll (pkgs: {
-        default = pkgs.callPackage ./nix/packages/deadlock-modbox.nix {
-          inherit (toolchain pkgs) deadlock-resourcecompiler deadlock-csdk;
-        };
-      });
+      # Bundle (everything merged) as default, plus one package per
+      # mods/*.patch, auto-discovered. `nix flake show` lists them.
+      packages = forAll (
+        pkgs:
+        let
+          tc = toolchain pkgs;
+          mkMod =
+            file:
+            let
+              mod = nixpkgs.lib.removeSuffix ".patch" file;
+            in
+            {
+              name = mod;
+              value = pkgs.callPackage ./nix/packages/deadlock-modbox.nix {
+                inherit (tc) deadlock-resourcecompiler deadlock-csdk;
+                name = "deadlock-modbox-${mod}";
+                patches = [ "mods/${file}" ];
+                vpkName = "${mod}.vpk";
+              };
+            };
+          modFiles = builtins.attrNames (
+            nixpkgs.lib.filterAttrs (n: v: v == "regular" && nixpkgs.lib.hasSuffix ".patch" n) (
+              builtins.readDir ./mods
+            )
+          );
+        in
+        {
+          default = pkgs.callPackage ./nix/packages/deadlock-modbox.nix {
+            inherit (tc) deadlock-resourcecompiler deadlock-csdk;
+            name = "deadlock-modbox-bundle";
+          };
+        }
+        // builtins.listToAttrs (map mkMod modFiles)
+      );
 
       devShells = forAll (pkgs: {
         default = pkgs.mkShell {
