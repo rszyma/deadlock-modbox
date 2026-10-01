@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Full build: mount the game (FUSE passthrough, root at setup only),
 # sync the hash input, build. With no args builds all the mods into one vpk;
-# with a mod name builds just that (see `nix flake show`).
+# with a mod name builds just that (see `nix eval '.#mods' --apply builtins.attrNames`).
 #   ./build.sh [mod]
 set -euo pipefail
 
@@ -24,7 +24,7 @@ if [ $# -eq 0 ]; then
   echo "Result VPK:" $out_path/*
 elif [ $# -eq 1 ]; then
   ATTR="${1#.#}"
-  out_path=$(nix build --option extra-sandbox-paths "/deadlock=$MNT" --print-out-paths -o "result-$ATTR" ".#$ATTR")
+  out_path=$(nix build --option extra-sandbox-paths "/deadlock=$MNT" --print-out-paths -o "result-$ATTR" ".#mods.$ATTR")
   echo "Result VPK:" $out_path/*
 else
   echo "usage: ./build.sh [mod]" >&2

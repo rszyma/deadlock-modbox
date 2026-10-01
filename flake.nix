@@ -17,11 +17,25 @@
       };
     in
     {
-      # Bundle (everything merged) as default, plus one package per
-      # mods/*.patch, auto-discovered. `nix flake show` lists them.
+      # Bundle (everything merged) as default; toolchain flat; mods under
+      # .#mods.<name>, auto-discovered from mods/*.patch.
       packages = forAll (
         pkgs:
+        {
+          default = pkgs.callPackage ./nix/packages/deadlock-modbox.nix {
+            inherit (toolchain pkgs) deadlock-resourcecompiler deadlock-csdk;
+            name = "deadlock-modbox-bundle";
+          };
+        }
+        // {
+          inherit (toolchain pkgs) deadlock-csdk deadlock-resourcecompiler deadlock-cfgvpk;
+          inherit (pkgs) source2viewer-cli;
+        }
+      );
+
+      mods =
         let
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
           tc = toolchain pkgs;
           mkMod =
             file:
@@ -43,18 +57,7 @@
             )
           );
         in
-        {
-          default = pkgs.callPackage ./nix/packages/deadlock-modbox.nix {
-            inherit (tc) deadlock-resourcecompiler deadlock-csdk;
-            name = "deadlock-modbox-bundle";
-          };
-        }
-        // builtins.listToAttrs (map mkMod modFiles)
-        // {
-          inherit (toolchain pkgs) deadlock-csdk deadlock-resourcecompiler deadlock-cfgvpk;
-          inherit (pkgs) source2viewer-cli;
-        }
-      );
+        builtins.listToAttrs (map mkMod modFiles);
 
       devShells = forAll (pkgs: {
         default = pkgs.mkShell {

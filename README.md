@@ -38,7 +38,9 @@ Then, building .vpk from `./mods` directory is done end-to-end by following comm
 ./build.sh instant-esc
 ```
 
-This produces `result/pak73_dir.vpk`. Take this file and install it with your mod manager (I recommend Grimoire).
+This produces `result/pak75_dir.vpk` (or `result-<mod>/<mod>.vpk` for a
+single mod). Take the file and install it with your mod manager
+(I recommend Grimoire). `nix eval '.#mods' --apply builtins.attrNames` lists every buildable mod.
 
 On game updates, when your mods stop working,
 first try to rebuild whem using `./build.sh` (as above).
