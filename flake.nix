@@ -9,8 +9,11 @@
       toolchain = pkgs: {
         deadlock-csdk = pkgs.callPackage ./nix/packages/deadlock-csdk.nix { };
         deadlock-resourcecompiler =
-          (pkgs.callPackage ./nix/packages/make-wine-wrapper.nix { }) "deadlock-resourcecompiler"
+          (pkgs.callPackage ./nix/packages/make-csdk-tool.nix { }) "deadlock-resourcecompiler"
             "resourcecompiler.exe";
+        deadlock-cfgvpk =
+          (pkgs.callPackage ./nix/packages/make-csdk-tool.nix { }) "deadlock-cfgvpk"
+            "CSDKCfgVPK.exe";
       };
     in
     {
@@ -47,6 +50,10 @@
           };
         }
         // builtins.listToAttrs (map mkMod modFiles)
+        // {
+          inherit (toolchain pkgs) deadlock-csdk deadlock-resourcecompiler deadlock-cfgvpk;
+          inherit (pkgs) source2viewer-cli;
+        }
       );
 
       devShells = forAll (pkgs: {
