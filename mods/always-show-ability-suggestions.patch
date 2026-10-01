@@ -1,0 +1,11 @@
+--- a/panorama/styles/hud_ability_icon.css
++++ b/panorama/styles/hud_ability_icon.css
+@@ -193,7 +193,7 @@
+ 	ignore-parent-flow: true;
+ }
+
+-.gDetailView .build_suggestion .build_suggestion_container,.wants_scoreboard .build_suggestion .build_suggestion_container
++.build_suggestion .build_suggestion_container
+ {
+ 	visibility: visible;
+ }
