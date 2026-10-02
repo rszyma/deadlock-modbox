@@ -46,3 +46,17 @@ for P in $PATCHES; do
   done
 done
 vpk "$T/$VPKNAME" -c "$T/stage"
+# Debug: ship the patched cleartext sources plus the compiled outputs
+# alongside the vpk, so a build can be inspected without rebuilding
+# (result*/debug after `nix build -o`). Skipped unless $DEBUG is set.
+if [ -n "${DEBUG:-}" ]; then
+mkdir -p "$T/debug"
+N=0
+for P in $PATCHES; do
+  N=$((N + 1))
+  cp "$PWD/$P" "$T/debug/"
+  cp -r "$T/fresh-$N" "$T/debug/before-$N" 2>/dev/null || true
+  cp -r "$T/work-$N" "$T/debug/after-$N" 2>/dev/null || true
+done
+cp -r "$T/stage" "$T/debug/stage"
+fi

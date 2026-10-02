@@ -8,6 +8,7 @@
   name ? "deadlock-modbox",
   patches ? null,
   vpkName ? "pak75_dir.vpk",
+  debug ? true,
 }:
 
 let
@@ -23,6 +24,7 @@ stdenvNoCC.mkDerivation {
   # Sandboxed build; the game dir arrives via extra-sandbox-paths (a hidden
   # input by design here - the game version IS the input, see README).
   GAME_MOUNT = gameMount;
+  DEBUG = if debug then "1" else "";
   CSDK_DIR = "${deadlock-csdk}";
   # Explicit game input: tools/update-hashes.sh refreshes this before every
   # build, so game updates change the derivation hash and force a rebuild.
@@ -39,5 +41,6 @@ stdenvNoCC.mkDerivation {
   installPhase = ''
     mkdir -p $out
     cp "$T"/*.vpk $out/
+    cp -r "$T/debug" $out/ 2>/dev/null || true
   '';
 }

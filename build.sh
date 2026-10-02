@@ -21,11 +21,11 @@ nix develop --command ./tools/update-hashes.sh
 
 if [ $# -eq 0 ]; then
   out_path=$(nix build --option extra-sandbox-paths "/deadlock=$MNT" --print-out-paths)
-  echo "Result VPK:" $out_path/*
+  echo "Result VPK:" $out_path/*.vpk
 elif [ $# -eq 1 ]; then
   ATTR="${1#.#}"
   out_path=$(nix build --option extra-sandbox-paths "/deadlock=$MNT" --print-out-paths -o "result-$ATTR" ".#mods.$ATTR")
-  echo "Result VPK:" $out_path/*
+  echo "Result VPK:" $out_path/*.vpk
 else
   echo "usage: ./build.sh [mod]" >&2
   exit 1
