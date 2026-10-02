@@ -1,3 +1,8 @@
+# This mod makes the "recommended" ability upgrade label to always show,
+# if you have enough unspent ability points to upgrade next ability from your build.
+#
+# Without this mod, it only shows this label when after pressing ALT / showing "HUD detail view",
+# which I found easy to miss and sit on tons of unspent points for too long.
 --- a/panorama/styles/hud_ability_icon.css
 +++ b/panorama/styles/hud_ability_icon.css
 @@ -193,7 +193,7 @@

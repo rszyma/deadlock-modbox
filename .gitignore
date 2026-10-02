@@ -2,3 +2,6 @@ result*
 __pycache__/
 result-*
 dist/
+*.vpk
+*.7z
+*.jpg

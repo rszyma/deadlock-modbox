@@ -9,16 +9,16 @@
 +	transition-duration: 0s;
  	flow-children: none;
  }
- 
+
 @@ -23,7 +23,7 @@
- 
+
  .ShowEscapeMenu #EscapeBackground
  {
 -	animation-duration: 0.12s;
 +	animation-duration: 0s;
  	animation-timing-function: ease-in-out;
  }
- 
+
 @@ -51,7 +51,7 @@
  	opacity: 0.0;
  	transform: translateX( -40px );
@@ -26,7 +26,7 @@
 -	transition-duration: 0.2s;
 +	transition-duration: 0s;
  }
- 
+
  .ShowEscapeMenu #LeftStripe
 @@ -131,7 +131,7 @@
  	flow-children: right;
@@ -35,7 +35,7 @@
 -	transition-duration: 0.08s;
 +	transition-duration: 0s;
  }
- 
+
  .nav_menu_item:hover
 @@ -173,7 +173,7 @@
  	font-family: block;
@@ -54,7 +54,7 @@
 +	transition-duration: 0s;
  	transition-timing-function: ease-in-out;
  }
- 
+
 @@ -213,7 +213,7 @@
  	color: offWhite&aa;
  	font-family: block;
@@ -63,7 +63,7 @@
 +	transition-duration: 0s;
  	transition-timing-function: ease-in-out;
  }
- 
+
 @@ -267,7 +267,7 @@
  	font-family: block;
  	overflow: noclip;
@@ -71,7 +71,7 @@
 -	transition-duration: 0.1s;
 +	transition-duration: 0s;
  }
- 
+
  .nav_menu_item.minor .smallIcon
 @@ -280,7 +280,7 @@
  	wash-color: offWhite;
@@ -80,7 +80,7 @@
 -	transition-duration: 0.3s;
 +	transition-duration: 0s;
  }
- 
+
  .nav_menu_item.minor .smallIcon.GearIcon
 @@ -319,7 +319,7 @@
  	background-size: contain;
@@ -90,7 +90,7 @@
 +	transition-duration: 0s;
  	transition-delay: 0s;
  }
- 
+
 @@ -357,7 +357,7 @@
  	vertical-align: middle;
  	transform: translateY( -2px );
@@ -98,7 +98,7 @@
 -	transition-duration: 0.2s;
 +	transition-duration: 0s;
  }
- 
+
  #QuickMute:hover
 @@ -388,7 +388,7 @@
  	transform: translateY( -2px );
@@ -107,10 +107,10 @@
 -	transition-duration: 0.2s;
 +	transition-duration: 0s;
  }
- 
+
  .QuickZoo:hover
 @@ -475,8 +475,8 @@
- 
+
  .ShowEscapeMenu #changehero
  {
 -	animation-name: ChangeHeroIntro;
@@ -119,7 +119,7 @@
 +	animation-duration: 0s;
  	animation-timing-function: ease-in-out;
  }
- 
+
 @@ -528,7 +528,7 @@
  	vertical-align: middle;
  	transform: translateY( -2px );
@@ -127,7 +127,7 @@
 -	transition-duration: 0.2s;
 +	transition-duration: 0s;
  }
- 
+
  .FeedbackRow #Unstick:hover
 @@ -569,7 +569,7 @@
  	opacity: 0.0;
@@ -136,7 +136,7 @@
 -	transition-duration: 0.2s;
 +	transition-duration: 0s;
  }
- 
+
  .ShowEscapeMenu #SocialContainer
 @@ -671,7 +671,7 @@
  	opacity: 0.0;
@@ -146,7 +146,7 @@
 +	transition-duration: 0s;
  	transition-timing-function: ease-in-out;
  }
- 
+
 @@ -687,7 +687,7 @@
  	opacity: 0.0;
  	transform: translateX( 20px );
@@ -154,12 +154,12 @@
 -	transition-duration: 0.2s;
 +	transition-duration: 0s;
  }
- 
+
  #RightSide .FriendsOrPlayersContents TabContents:selected
 --- a/panorama/styles/hud_paused.css
 +++ b/panorama/styles/hud_paused.css
 @@ -72,8 +72,8 @@
- 
+
  #PausedCountdownLabel.ShrinkCountdown
  {
 -	animation-name: ShrinkAnimation;
@@ -191,7 +191,7 @@
 +++ b/panorama/styles/hud.css
 @@ -7,6 +7,35 @@
  }
- 
+
  .HudCore
 +{
 +	width: 100%;
@@ -228,7 +228,7 @@
 @@ -14,35 +43,6 @@
  	transition-duration: 0.2s;
  }
- 
+
 -.ShowEscapeMenu .HudCore
 -{
 -	opacity: 0.0;
@@ -268,14 +268,14 @@
 -	transition-duration: 0.0s;
 +	transition-duration: 0s;
  }
- 
+
  .HudTakeoverEnabled .HudTakeovers
  {
 -	transition-duration: 0.2s;
 +	transition-duration: 0s;
  	opacity: 1.0;
  }
- 
+
 @@ -110,7 +110,7 @@
  {
  	opacity: 0.0;
@@ -283,5 +283,5 @@
 -	transition-duration: 0.2s;
 +	transition-duration: 0s;
  }
- 
+
  .ShowEscapeMenu #EscapeMenu

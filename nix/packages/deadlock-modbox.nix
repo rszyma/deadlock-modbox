@@ -1,4 +1,5 @@
 {
+  lib,
   stdenvNoCC,
   python3Packages,
   git,
@@ -9,6 +10,11 @@
   patches ? null,
   vpkName ? "pak75_dir.vpk",
   debug ? true,
+  # VersionDate+VersionTime from the game's steam.inf, baked in by
+  # ./build.sh via a generated wrapper flake (flake refs take no
+  # arguments). Keys the derivation, so game updates rebuild through the
+  # normal cache.
+  gameVersion,
 }:
 
 let
@@ -18,7 +24,7 @@ let
 in
 stdenvNoCC.mkDerivation {
   inherit name;
-  src = ../..;
+  src = lib.cleanSource ../..;
   PATCHES = if patches == null then "mods/*.patch" else builtins.toString patches;
   VPKNAME = vpkName;
   # Sandboxed build; the game dir arrives via extra-sandbox-paths (a hidden
@@ -26,9 +32,9 @@ stdenvNoCC.mkDerivation {
   GAME_MOUNT = gameMount;
   DEBUG = if debug then "1" else "";
   CSDK_DIR = "${deadlock-csdk}";
-  # Explicit game input: tools/update-hashes.sh refreshes this before every
-  # build, so game updates change the derivation hash and force a rebuild.
-  GAME_HASH = builtins.readFile ../../game-file-hashes.json;
+  # The mounted game is a hidden input by design (see README);
+  # We need to pass outside value to force rebuild on game update.
+  _GAME_VERSION = gameVersion;
   nativeBuildInputs = [
     deadlock-resourcecompiler
     source2viewer-cli

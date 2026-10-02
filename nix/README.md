@@ -7,8 +7,8 @@ unpacked into the Nix store.
 ## Packages
 
 All of it is exposed (`nix flake show`) and on `PATH` inside
-`nix develop`: `deadlock-csdk`, `deadlock-resourcecompiler`,
-`deadlock-cfgvpk`, `source2viewer-cli`, plus `vpk`, `python3`, `jq`.
+`nix develop`:
+`deadlock-csdk`, `deadlock-resourcecompiler`, `deadlock-cfgvpk`, `source2viewer-cli`, `vpk`.
 
 Binary flavors: `CSDK_BIN=bin|bin_cs2|bin_server|bin_tools` (default
 `bin_cs2` - the only flavor that passes the schema check).

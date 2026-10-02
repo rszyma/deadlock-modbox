@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Full build: mount the game (FUSE passthrough, root at setup only),
-# sync the hash input, build. With no args builds all the mods into one vpk;
-# with a mod name builds just that (see `nix eval '.#mods' --apply builtins.attrNames`).
-#   ./build.sh [mod]
+# Build a VPK from selected patches from ./mod directory.
+# Args: with no args defaults to all patches; with mod names builds just those.
+#
+#   ./build.sh [mod...]
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"; PROJ_ROOT="$PWD"
@@ -17,16 +17,26 @@ if ! grep -q " $MNT " /proc/mounts 2>/dev/null; then
   sudo "$BINDFS" -o allow_other "$GAME" "$MNT"
 fi
 
-nix develop --command ./tools/update-hashes.sh
+GAMEVERSION="$(grep -m1 '^VersionDate=' "$MNT/citadel/steam.inf" | cut -d= -f2 | tr -d '\r') $(grep -m1 '^VersionTime=' "$MNT/citadel/steam.inf" | cut -d= -f2 | tr -d '\r')"
+[ "$GAMEVERSION" != " " ] || { echo "no VersionDate/Time in $MNT/citadel/steam.inf" >&2; exit 1; }
 
 if [ $# -eq 0 ]; then
-  out_path=$(nix build --option extra-sandbox-paths "/deadlock=$MNT" --print-out-paths)
-  echo "Result VPK:" $out_path/*.vpk
-elif [ $# -eq 1 ]; then
-  ATTR="${1#.#}"
-  out_path=$(nix build --option extra-sandbox-paths "/deadlock=$MNT" --print-out-paths -o "result-$ATTR" ".#mods.$ATTR")
-  echo "Result VPK:" $out_path/*.vpk
+  MODS=""; RESULT_LINK="result"
 else
-  echo "usage: ./build.sh [mod]" >&2
-  exit 1
+  MODS=""
+  for MOD in "$@"; do
+    M="${MOD#.#}"
+    [ -f "mods/$M.patch" ] || { echo "no such mod: $M (see mods/)" >&2; exit 1; }
+    MODS="${MODS:+$MODS }$M"
+  done
+  RESULT_LINK="result-$(echo "$MODS" | tr ' ' '+')"
 fi
+
+out_path=$(nix-build \
+  --option extra-sandbox-paths "/deadlock=$MNT" \
+  --argstr mods "$MODS" \
+  --argstr gameVersion "$GAMEVERSION" \
+  -o "$RESULT_LINK" \
+  --no-build-output \
+)
+echo "Result VPK:" $out_path/*.vpk

@@ -20,7 +20,7 @@ Detect mod collisions at build time. Mods are compiled and merged into a single 
 - **Instant ESC** - removes the open/close animations from the pause menu, it opens instantly.
 - **Hide upgrade reminder** - hides the "hold <key> to upgrade" banner above the abilities.
 
-Q: Only 2 mods?\
+Q: Only 3 mods?\
 A: Currently yes :P. But the point is to spread the idea. Hopefully we will get more mods as .patch files with time!
 
 ## Usage - building .vpk file
@@ -28,19 +28,20 @@ A: Currently yes :P. But the point is to spread the idea. Hopefully we will get 
 You need [Nix](https://nixos.org/download/) and the game installed
 through Steam.
 
-Then, building .vpk from `./mods` directory is done end-to-end by following commands:
+Then, building .vpk from `./mods` directory is done end-to-end using `build.sh` command. Examples:
 ```bash
 # build all mods in ./mods directory as one .vpk
 ./build.sh
 
-# build only a specific mod into a .vpk
-./build.sh always-show-ability-suggestions
+# build a single mod to standalone .vpk (./mods/instant-esc.patch)
 ./build.sh instant-esc
+
+# combine 2 mods to a single .vpk
+./build.sh always-show-ability-suggestions hide-upgrade-reminder
 ```
 
-This produces `result/pak75_dir.vpk` (or `result-<mod>/<mod>.vpk` for a
-single mod). Take the file and install it with your mod manager
-(I recommend Grimoire). `nix eval '.#mods' --apply builtins.attrNames` lists every buildable mod.
+This produces `result/pak75_dir.vpk` (or `result-<mods>/<mods>.vpk` for a selection). Take the file and install it with your mod manager (I recommend Grimoire).
+Every .patch file in mods/ is a standalone mod, but may also be combined with other mods.
 
 On game updates, when your mods stop working,
 first try to rebuild whem using `./build.sh` (as above).

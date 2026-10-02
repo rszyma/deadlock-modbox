@@ -17,47 +17,12 @@
       };
     in
     {
-      # Bundle (everything merged) as default; toolchain flat; mods under
-      # .#mods.<name>, auto-discovered from mods/*.patch.
-      packages = forAll (
-        pkgs:
-        {
-          default = pkgs.callPackage ./nix/packages/deadlock-modbox.nix {
-            inherit (toolchain pkgs) deadlock-resourcecompiler deadlock-csdk;
-            name = "deadlock-modbox-bundle";
-          };
-        }
-        // {
-          inherit (toolchain pkgs) deadlock-csdk deadlock-resourcecompiler deadlock-cfgvpk;
-          inherit (pkgs) source2viewer-cli;
-        }
-      );
-
-      mods =
-        let
-          pkgs = nixpkgs.legacyPackages.x86_64-linux;
-          tc = toolchain pkgs;
-          mkMod =
-            file:
-            let
-              mod = nixpkgs.lib.removeSuffix ".patch" file;
-            in
-            {
-              name = mod;
-              value = pkgs.callPackage ./nix/packages/deadlock-modbox.nix {
-                inherit (tc) deadlock-resourcecompiler deadlock-csdk;
-                name = "deadlock-modbox-${mod}";
-                patches = [ "mods/${file}" ];
-                vpkName = "${mod}.vpk";
-              };
-            };
-          modFiles = builtins.attrNames (
-            nixpkgs.lib.filterAttrs (n: v: v == "regular" && nixpkgs.lib.hasSuffix ".patch" n) (
-              builtins.readDir ./mods
-            )
-          );
-        in
-        builtins.listToAttrs (map mkMod modFiles);
+      # Following packages make a toolchain building mods (see nix/README.md).
+      # For mod builder itself see ./build.sh instead.
+      packages = forAll (pkgs: {
+        inherit (toolchain pkgs) deadlock-csdk deadlock-resourcecompiler deadlock-cfgvpk;
+        inherit (pkgs) source2viewer-cli;
+      });
 
       devShells = forAll (pkgs: {
         default = pkgs.mkShell {
@@ -66,7 +31,6 @@
             pkgs.source2viewer-cli
             pkgs.python3Packages.vpk
             pkgs.python3
-            pkgs.jq
           ];
         };
       });
