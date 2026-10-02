@@ -1,0 +1,16 @@
+# Hide the "hold <key> to upgrade" reminder banner above the abilities.
+--- a/panorama/styles/hud.css
++++ b/panorama/styles/hud.css
+@@ -2941,6 +2941,12 @@
+ 	visibility: collapse;
+ }
+
++.unlock_available .unlockMessage.upgradeReminderUI,
++.upgrade_reminder .upgradeMessage.upgradeReminderUI
++{
++	visibility: collapse;
++}
++
+ .unlockMessage CitadelBinding
+ {
+ 	margin: 0px 2px;

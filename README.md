@@ -17,8 +17,8 @@ Detect mod collisions at build time. Mods are compiled and merged into a single 
 - **Always show ability suggestions** - Deadlock marks the
   next upgrade your build wants with a small badge, but normally shows
   it only when you open the details view. This shows it all the time.
-- **Instant ESC** - removes the open/close
-  animations from the pause menu, it opens instantly.
+- **Instant ESC** - removes the open/close animations from the pause menu, it opens instantly.
+- **Hide upgrade reminder** - hides the "hold <key> to upgrade" banner above the abilities.
 
 Q: Only 2 mods?\
 A: Currently yes :P. But the point is to spread the idea. Hopefully we will get more mods as .patch files with time!
