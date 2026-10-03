@@ -41,7 +41,7 @@ Then, building .vpk from `./mods` directory is done end-to-end using `build.sh` 
 ```
 
 This produces `result/pak75_dir.vpk` (or `result-<mods>/<mods>.vpk` for a selection). Take the file and install it with your mod manager (I recommend Grimoire).
-Every .patch file in mods/ is a standalone mod, but may also be combined with other mods.
+Every .patch file in mods/ is a standalone mod, but may also be combined with other mods. Patches to the same file apply cumulatively in listed order, so they compose; if two patches edit the same lines, the build fails loudly instead of silently dropping one.
 
 On game updates, when your mods stop working,
 first try to rebuild whem using `./build.sh` (as above).
