@@ -33,8 +33,8 @@ Then, building .vpk from `./mods` directory is done end-to-end using `build.sh` 
 # build all mods in ./mods directory as one .vpk
 ./build.sh
 
-# build a single mod to standalone .vpk (./mods/instant-esc.patch)
-./build.sh instant-esc
+# build a single mod to standalone .vpk (./mods/remove-esc-menu-animations.patch)
+./build.sh remove-esc-menu-animations
 
 # combine 2 mods to a single .vpk
 ./build.sh always-show-ability-suggestions hide-upgrade-reminder
