@@ -2,6 +2,7 @@
   lib,
   stdenvNoCC,
   python3Packages,
+  p7zip,
   git,
   source2viewer-cli,
   deadlock-resourcecompiler,
@@ -10,6 +11,7 @@
   patches ? null,
   vpkName ? "pak75_dir.vpk",
   debug ? true,
+  release ? true,
   # VersionDate+VersionTime from the game's steam.inf, baked in by
   # ./build.sh via a generated wrapper flake (flake refs take no
   # arguments). Keys the derivation, so game updates rebuild through the
@@ -31,6 +33,7 @@ stdenvNoCC.mkDerivation {
   # input by design here - the game version IS the input, see README).
   GAME_MOUNT = gameMount;
   DEBUG = if debug then "1" else "";
+  RELEASE = if release then "1" else "";
   CSDK_DIR = "${deadlock-csdk}";
   # The mounted game is a hidden input by design (see README);
   # We need to pass outside value to force rebuild on game update.
@@ -40,6 +43,7 @@ stdenvNoCC.mkDerivation {
     source2viewer-cli
     git
     python3Packages.vpk
+    p7zip
   ];
   buildPhase = ''
     source ${../../tools/build-phase.sh}
@@ -48,5 +52,6 @@ stdenvNoCC.mkDerivation {
     mkdir -p $out
     cp "$T"/*.vpk $out/
     cp -r "$T/debug" $out/ 2>/dev/null || true
+    cp -r "$T/release" $out/ 2>/dev/null || true
   '';
 }

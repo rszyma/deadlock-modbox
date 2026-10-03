@@ -60,3 +60,9 @@ for P in $PATCHES; do
 done
 cp -r "$T/stage" "$T/debug/stage"
 fi
+# Release: 7zipped archive of the vpk for upload (result*/release).
+# Skipped unless $RELEASE is set.
+if [ -n "${RELEASE:-}" ]; then
+  mkdir -p "$T/release"
+  7z a "$T/release/${VPKNAME%.vpk}.7z" "$T/$VPKNAME"
+fi

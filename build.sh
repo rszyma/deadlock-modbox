@@ -39,4 +39,5 @@ out_path=$(nix-build \
   -o "$RESULT_LINK" \
   --no-build-output \
 )
-echo "Result VPK:" $out_path/*.vpk
+echo "VPK:" $out_path/*.vpk
+echo "7z:" $out_path/release/*.7z
