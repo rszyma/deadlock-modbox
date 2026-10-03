@@ -14,13 +14,15 @@ Detect mod collisions at build time. Mods are compiled and merged into a single 
 
 ## Mod list in this repository
 
+- **Remove Esc Menu Animations** - removes the open/close animations from the pause menu, it opens instantly.
 - **Always show ability suggestions** - Deadlock marks the
   next upgrade your build wants with a small badge, but normally shows
   it only when you open the details view. This shows it all the time.
-- **Instant ESC** - removes the open/close animations from the pause menu, it opens instantly.
+- **Hide ability suggestions in Street Brawl** - hides the build-suggestion badge in Street Brawl mode, useful to mitigate
+  [the bug with stuck suggestion badge](https://forums.playdeadlock.com/threads/minor-bug-with-suggested-ability-on-pocket-in-street-brawl.166966/)
 - **Hide upgrade reminder** - hides the "hold <key> to upgrade" banner above the abilities.
 
-Q: Only 3 mods?\
+Q: Only 4 mods?\
 A: Currently yes :P. But the point is to spread the idea. Hopefully we will get more mods as .patch files with time!
 
 ## Usage - building .vpk file
