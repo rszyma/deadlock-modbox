@@ -20,13 +20,18 @@ N=0
 # same-file patches compose with no bookkeeping. Overlapping hunks fail
 # loudly at git apply below.
 ALLTARGETS=$(for P in $PATCHES; do grep '^--- a/' "$P" | cut -d/ -f2-; done | sort -u)
-mkdir -p "$T/step-0"
+mkdir -p "$T/step-0" "$T/fresh-0"
+[ -f "$GAME_MOUNT/citadel/pak01_dir.vpk" ] \
+  || { echo "no input VPK at $GAME_MOUNT/citadel/pak01_dir.vpk (check /tmp/deadlock mount)" >&2; ls -l "$GAME_MOUNT/citadel" >&2; exit 1; }
 for D in $ALLTARGETS; do
   TARGET=$(echo "$D" | sed 's|\.\([a-z]*\)$|.v\1_c|')
   mkdir -p "$T/step-0/$(dirname "$D")"
-  Source2Viewer-CLI \
+  echo "+ decompiling $TARGET" >&2
+  if ! Source2Viewer-CLI \
     -i "$GAME_MOUNT/citadel/pak01_dir.vpk" -d -o "$T/fresh-0" \
-    -f "$TARGET" >/dev/null 2>&1
+    -f "$TARGET"; then
+    echo "decompile command failed for $D ($TARGET)" >&2; exit 1
+  fi
   CSS=$(find "$T/fresh-0" -name "$(basename "$D")" | head -n 1)
   [ -n "$CSS" ] || { echo "decompile produced no $D" >&2; exit 1; }
   cp "$CSS" "$T/step-0/$D"
