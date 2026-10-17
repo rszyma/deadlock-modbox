@@ -7,14 +7,26 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"; PROJ_ROOT="$PWD"
 
-GAME="$HOME/.steam/steam/steamapps/common/Deadlock/game"
+GAME="${GAME_DIR:-$HOME/.steam/steam/steamapps/common/Deadlock/game}"
 MNT=/tmp/deadlock
 
+[ -d "$GAME" ] || { echo "game dir not found: $GAME (set GAME_DIR=... for a custom Steam library)" >&2; exit 1; }
 mkdir -p "$MNT"
+# Re-export via FUSE so the sandbox build (nixbld user) can read the game:
+# direct extra-sandbox-paths on $GAME fails when $HOME is 0700, and FUSE
+# hides mounts from other users by default, hence allow_other below.
 if ! grep -q " $MNT " /proc/mounts 2>/dev/null; then
-  BINDFS="$(nix build nixpkgs#bindfs --print-out-paths --no-link)/bin/bindfs"
-  # allow_other requires elevated priviledges
-  sudo "$BINDFS" -o allow_other "$GAME" "$MNT"
+  if command -v bindfs >/dev/null 2>&1; then
+    BINDFS=bindfs
+  else
+    BINDFS="$(nix build nixpkgs#bindfs --print-out-paths --no-link)/bin/bindfs"
+  fi
+  # Try unprivileged first: no sudo needed when /etc/fuse.conf enables user_allow_other.
+  if ! "$BINDFS" -o allow_other "$GAME" "$MNT" 2>/dev/null; then
+    echo "unprivileged bindfs failed, retrying with sudo" >&2
+    sudo "$BINDFS" -o allow_other "$GAME" "$MNT" \
+      || { echo "hint: run 'sudo -v' in a terminal first, or enable user_allow_other in /etc/fuse.conf for passwordless mounts" >&2; exit 1; }
+  fi
 fi
 
 GAMEVERSION="$(grep -m1 '^VersionDate=' "$MNT/citadel/steam.inf" | cut -d= -f2 | tr -d '\r') $(grep -m1 '^VersionTime=' "$MNT/citadel/steam.inf" | cut -d= -f2 | tr -d '\r')"
@@ -37,8 +49,9 @@ out_path=$(nix-build \
   --argstr mods "$MODS" \
   --argstr gameVersion "$GAMEVERSION" \
   -o "$RESULT_LINK" \
-  --no-build-output \
+  # --no-build-output \
 )
+echo
 echo "debug:" $out_path/debug
 echo "VPK:" $out_path/*.vpk
 echo "7z:" $out_path/release/*.7z
