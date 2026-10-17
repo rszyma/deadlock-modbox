@@ -19,6 +19,8 @@ let
   }) { };
   tc = {
     deadlock-csdk = pkgs.callPackage ./nix/packages/deadlock-csdk.nix { };
+    # Vendored from nixpkgs (see nix/packages/source2viewer-cli/README.md).
+    source2viewer-cli = pkgs.callPackage ./nix/packages/source2viewer-cli/package.nix { };
     deadlock-resourcecompiler =
       (pkgs.callPackage ./nix/packages/make-csdk-tool.nix { }) "deadlock-resourcecompiler"
         "resourcecompiler.exe";
@@ -34,7 +36,7 @@ let
   stem = builtins.concatStringsSep "+" sel;
 in
 pkgs.callPackage ./nix/packages/deadlock-modbox.nix {
-  inherit (tc) deadlock-resourcecompiler deadlock-csdk;
+  inherit (tc) deadlock-resourcecompiler deadlock-csdk source2viewer-cli;
   inherit gameVersion;
   name = "deadlock-modbox-${if mods == "" then "bundle" else stem}";
   patches = map (m: "mods/${m}.patch") sel;

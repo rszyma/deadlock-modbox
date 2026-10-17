@@ -8,6 +8,8 @@
       forAll = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
       toolchain = pkgs: {
         deadlock-csdk = pkgs.callPackage ./nix/packages/deadlock-csdk.nix { };
+        # Vendored from nixpkgs (see nix/packages/source2viewer-cli/README.md).
+        source2viewer-cli = pkgs.callPackage ./nix/packages/source2viewer-cli/package.nix { };
         deadlock-resourcecompiler =
           (pkgs.callPackage ./nix/packages/make-csdk-tool.nix { }) "deadlock-resourcecompiler"
             "resourcecompiler.exe";
@@ -20,15 +22,19 @@
       # Following packages make a toolchain building mods (see nix/README.md).
       # For mod builder itself see ./build.sh instead.
       packages = forAll (pkgs: {
-        inherit (toolchain pkgs) deadlock-csdk deadlock-resourcecompiler deadlock-cfgvpk;
-        inherit (pkgs) source2viewer-cli;
+        inherit (toolchain pkgs)
+          deadlock-csdk
+          deadlock-resourcecompiler
+          deadlock-cfgvpk
+          source2viewer-cli
+          ;
       });
 
       devShells = forAll (pkgs: {
         default = pkgs.mkShell {
           buildInputs = [
             (toolchain pkgs).deadlock-resourcecompiler
-            pkgs.source2viewer-cli
+            (toolchain pkgs).source2viewer-cli
             pkgs.python3Packages.vpk
             pkgs.python3
           ];
