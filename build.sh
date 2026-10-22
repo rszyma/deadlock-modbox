@@ -32,6 +32,31 @@ fi
 GAMEVERSION="$(grep -m1 '^VersionDate=' "$MNT/citadel/steam.inf" | cut -d= -f2 | tr -d '\r') $(grep -m1 '^VersionTime=' "$MNT/citadel/steam.inf" | cut -d= -f2 | tr -d '\r')"
 [ "$GAMEVERSION" != " " ] || { echo "no VersionDate/Time in $MNT/citadel/steam.inf" >&2; exit 1; }
 
+# Optional CSDK override: the Google Drive fetch is flaky (changing hashes),
+# so a local unpacked Reduced_CSDK_12 tree can be used instead:
+#   CSDK_PATH=/nix/store/...-Reduced_CSDK_12 ./build.sh ...
+# The path is passed as a plain string on purpose: as a path value nix
+# would ingest the whole 6 GB tree into the store on every evaluation.
+# A bare string keeps eval instant, but then the tree is not part of the
+# derivation closure - and this sandbox only exposes the closure, not the
+# whole store. So the tree is bind-mounted into the sandbox explicitly
+# (same mechanism as /deadlock above), and the string just points at it.
+# The tree must exist (and stay) on the host; root a store copy once, e.g.:
+#   nix-store --realise <path> --add-root /nix/var/nix/gcroots/csdk-local
+CSDK_SANDBOX=""
+CSDK_NIX_ARGS=()
+SANDBOX_PATHS="/deadlock=$MNT"
+if [ -n "${CSDK_PATH:-}" ]; then
+  [ -d "$CSDK_PATH" ] || { echo "CSDK_PATH is not a directory: $CSDK_PATH" >&2; exit 1; }
+  for f in game/bin_cs2/win64/resourcecompiler.exe game/citadel/bin game/core/panorama/panorama_config.txt; do
+    [ -e "$CSDK_PATH/$f" ] || { echo "CSDK_PATH looks wrong, missing $f (want an unpacked Reduced_CSDK_12)" >&2; exit 1; }
+  done
+  CSDK_REAL="$(realpath "$CSDK_PATH")"
+  CSDK_SANDBOX="/csdk"
+  SANDBOX_PATHS="$SANDBOX_PATHS $CSDK_SANDBOX=$CSDK_REAL"
+  CSDK_NIX_ARGS=(--argstr csdkPath "$CSDK_SANDBOX")
+fi
+
 if [ $# -eq 0 ]; then
   MODS=""; RESULT_LINK="result"
 else
@@ -44,10 +69,11 @@ else
   RESULT_LINK="result-$(echo "$MODS" | tr ' ' '+')"
 fi
 
-out_path=$(nix-build \
-  --option extra-sandbox-paths "/deadlock=$MNT" \
+out_path=$(nix shell nixpkgs#nix -c nix-build \
+  --option extra-sandbox-paths "$SANDBOX_PATHS" \
   --argstr mods "$MODS" \
   --argstr gameVersion "$GAMEVERSION" \
+  "${CSDK_NIX_ARGS[@]}" \
   -o "$RESULT_LINK" \
   # --no-build-output \
 )

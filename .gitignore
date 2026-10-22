@@ -5,3 +5,4 @@ dist/
 *.vpk
 *.7z
 *.jpg
+nix/.gcroots

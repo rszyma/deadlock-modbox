@@ -1,0 +1,43 @@
+# Click outside the shop content to close the shop.
+#
+# Clicking any empty area of the shop (the side margins, gaps between
+# panels - anywhere that is not a button, item or text entry) exits
+# the upgrade shop, the same as pressing ESC with nothing focused.
+# This uses the vanilla pattern from the shop's own Back footer: a
+# plain Panel with onactivate. Clicks on actual shop content are
+# claimed by the content above and never reach it. The handler is
+# added at three levels so transparent overlays (e.g. the search
+# column on the right) cannot swallow the click first. The item
+# lists block itself carries an empty onactivate so gaps between
+# items do NOT close the shop - only the areas outside the content.
+#
+--- a/panorama/layout/citadel_hud_hero_shop.xml
++++ b/panorama/layout/citadel_hud_hero_shop.xml
+@@ -16,13 +16,13 @@
+ 			</Panel>
+ 		</snippet>
+ 	</snippets>
+-	<CitadelHudHeroShop class="CitadelHudHeroShop gShopOpen" oncancel="CitadelExitUpgradeShop();" disallowedstyleflags="hover,descendantfocus" onactivate="">
++	<CitadelHudHeroShop class="CitadelHudHeroShop gShopOpen" oncancel="CitadelExitUpgradeShop();" disallowedstyleflags="hover,descendantfocus" onactivate="CitadelExitUpgradeShop();">
+ 		<GlobalClassListener classes="gEditingBuilds gScoreboardOpen gShopOpen" />
+-		<Panel id="Shop" disallowedstyleflags="hover,descendantfocus">
++		<Panel id="Shop" disallowedstyleflags="hover,descendantfocus" onactivate="CitadelExitUpgradeShop();">
+ 			<Button id="ShopSettingsButton" onactivate="CitadelSettingsFocusSection( &apos;#citadel_settings_game&apos;, &apos;#citadel_settings_shop&apos; );" onmouseover="CitadelUIShowTextTooltip( #Citadel_Shop_SettingsTooltip )" onmouseout="CitadelUIHideTextTooltip()">
+ 				<Image src="s2r://panorama/images/icons/icon_gear.vsvg" />
+ 			</Button>
+-			<Panel id="MainPanel" disallowedstyleflags="hover,descendantfocus">
++			<Panel id="MainPanel" disallowedstyleflags="hover,descendantfocus" onactivate="">
+ 				<Panel id="ShopModsContainer" disallowedstyleflags="hover,descendantfocus">
+ 					<Panel id="ShopNavigation" disallowedstyleflags="hover,descendantfocus">
+ 						<Panel id="FavoritesNav" class="NavigationButton" onmouseactivate="CitadelSelectShopTab( EShopTab_Build ); PlaySoundEffect( &apos;UI.Shop.Mod.Starred.Click&apos; );" onmouseover="CitadelUIShowTextTooltip( #Citadel_Shop_NavTab_Builds )" onmouseout="CitadelUIHideTextTooltip()">
+--- a/panorama/layout/citadel_ui_shop_filters.xml
++++ b/panorama/layout/citadel_ui_shop_filters.xml
+@@ -51,7 +51,7 @@
+ 				</Panel>
+ 			</Panel>
+ 		</Panel>
+-		<Panel id="SearchContainer" onmouseover="CitadelShopFilterShowMenu(&apos;&apos;)">
++		<Panel id="SearchContainer" onmouseover="CitadelShopFilterShowMenu(&apos;&apos;)" onactivate="CitadelExitUpgradeShop();">
+ 			<Panel id="SearchBox">
+ 				<Panel id="ShopSearchIcon" onactivate="CitadelShopFilterSetSearchFocus();" />
+ 				<TextEntry id="SearchTextEntry" acceptsfocus="true" acceptsinput="true" placeholder="#CitadelShopFilter_SearchPlaceholder" ontextentrychange="CitadelShopSearchTextEntryChanged()" onfocus="CitadelShopSearchTextEntryChanged()" />

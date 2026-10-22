@@ -21,8 +21,11 @@ Detect mod collisions at build time. Mods are compiled and merged into a single 
 - **Hide ability suggestions in Street Brawl** - hides the build-suggestion badge in Street Brawl mode, useful to mitigate
   [the bug with stuck suggestion badge](https://forums.playdeadlock.com/threads/minor-bug-with-suggested-ability-on-pocket-in-street-brawl.166966/)
 - **Hide upgrade reminder** - hides the "hold <key> to upgrade" banner above the abilities.
+- **Click outside to close shop** - clicking empty areas around the shop (side margins, the search column's empty areas) exits the upgrade shop, same as ESC. Uses the vanilla pattern from the shop's own Back footer (a plain panel with onactivate), applied at three levels so transparent overlays cannot swallow the click. Clicks on items, buttons and text entries are claimed by that content, and gaps between items are explicitly excluded - only the areas outside the content close it.
+- **Click outside to close imbue dialog** - clicking the dimmed area around the imbue/ability-select dialog cancels it, same as ESC or its Cancel button. Same pattern: the dialog root carries the Cancel action and is forced full-screen, while the dialog content block swallows its own clicks so slots and buttons are unaffected.
+- **Imbue cancel with mouse back** - pressing the mouse back button (mouse4) while the imbue/ability-select dialog is open cancels it, exactly like ESC. Capture happens below the game keybinds in panorama's own keybind file, so it works even when mouse4 is also bound to a game action like dash. No settings changes needed.
 
-Q: Only 4 mods?\
+Q: Only 7 mods?\
 A: Currently yes :P. But the point is to spread the idea. Hopefully we will get more mods as .patch files with time!
 
 ## Usage - building .vpk file
@@ -43,6 +46,12 @@ Then, building .vpk from `./mods` directory is done end-to-end using `build.sh` 
 ```
 
 This produces `result/pak75_dir.vpk` (or `result-<mods>/<mods>.vpk` for a selection). Take the file and install it with your mod manager (I recommend Grimoire).
+
+If the CSDK download fails (its Google Drive file changes hash), point the build at a local unpacked `Reduced_CSDK_12` tree instead:
+
+```bash
+CSDK_PATH=/nix/store/...-Reduced_CSDK_12 ./build.sh
+```
 Every .patch file in mods/ is a standalone mod, but may also be combined with other mods. Patches to the same file apply cumulatively in listed order, so they compose; if two patches edit the same lines, the build fails loudly instead of silently dropping one.
 
 On game updates, when your mods stop working,
@@ -65,3 +74,9 @@ then save the difference:
 ```bash
 diff -u --label a/panorama/<path>/<file>.css --label b/panorama/<path>/<file>.css /tmp/orig.css /tmp/edited.css > mods/my-mod-name.patch
 ```
+
+The same workflow works for layout (`.xml` -> `.vxml_c`) and script
+(`.js` -> `.vjs_c`) files. A patch may also *add* a new file (for
+example a new `panorama/scripts/*.js` included from a patched layout)
+using a `--- /dev/null` + `+++ b/<path>` hunk; the build then skips
+decompiling it and compiles it directly.

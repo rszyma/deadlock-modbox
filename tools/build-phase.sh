@@ -14,16 +14,53 @@ cp "$CSDK_DIR/game/core/panorama/panorama_config.txt" \
   "$T/game/core/panorama/panorama_config.txt"
 export WINEPREFIX="$T/wineprefix"
 export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+# Raw files (no compiled _c form in the VPK, e.g. .cfg keybind files)
+# are extracted as-is and staged without resourcecompiler.
+is_raw() { case "$1" in *.cfg) return 0;; *) return 1;; esac; }
 N=0
 # Cumulative steps: step-0 holds fresh decompiles of every target across
 # all patches; step-N is a copy of step-(N-1) with patch N applied, so
 # same-file patches compose with no bookkeeping. Overlapping hunks fail
-# loudly at git apply below.
-ALLTARGETS=$(for P in $PATCHES; do grep '^--- a/' "$P" | cut -d/ -f2-; done | sort -u)
+# loudly at git apply below. Patches may also add new files
+# (--- /dev/null + +++ b/<path>, e.g. a new panorama script): those are
+# skipped at decompile time and created by git apply instead.
+# NOTE: the `|| true`s below are load-bearing: with `set -euo pipefail`
+# a grep with no matches would otherwise kill the build silently.
+ALLTARGETS=$(for P in $PATCHES; do grep '^+++ b/' "$P" || true; done | sed 's|^+++ b/||' | grep -v '^/dev/null$' | sort -u || true)
+NEWFILES=$(for P in $PATCHES; do grep -A1 '^--- /dev/null' "$P" || true; done | grep '^+++ b/' | sed 's|^+++ b/||' | sort -u || true)
 mkdir -p "$T/step-0" "$T/fresh-0"
 [ -f "$GAME_MOUNT/citadel/pak01_dir.vpk" ] \
   || { echo "no input VPK at $GAME_MOUNT/citadel/pak01_dir.vpk (check /tmp/deadlock mount)" >&2; ls -l "$GAME_MOUNT/citadel" >&2; exit 1; }
 for D in $ALLTARGETS; do
+  # Line-based match: $NEWFILES is newline-separated, so a space-wrapped
+  # case pattern would miss every entry but the last.
+  if [ -n "$NEWFILES" ] && printf '%s\n' "$NEWFILES" | grep -qxF "$D"; then
+    echo "+ new file $D (no decompile)" >&2
+    continue
+  fi
+  if is_raw "$D"; then
+    echo "+ extracting raw $D" >&2
+    if ! Source2Viewer-CLI \
+      -i "$GAME_MOUNT/citadel/pak01_dir.vpk" -o "$T/fresh-0" \
+      -f "$D"; then
+      echo "extract command failed for $D" >&2; exit 1
+    fi
+    CSS=$(find "$T/fresh-0" -name "$(basename "$D")" | head -n 1)
+    if [ -z "$CSS" ]; then
+      # Not in the citadel pack: try the core pack
+      # (e.g. panorama/default_keybinds.cfg).
+      if ! Source2Viewer-CLI \
+        -i "$GAME_MOUNT/core/pak01_dir.vpk" -o "$T/fresh-0" \
+        -f "$D"; then
+        echo "extract command failed for $D" >&2; exit 1
+      fi
+      CSS=$(find "$T/fresh-0" -name "$(basename "$D")" | head -n 1)
+    fi
+    [ -n "$CSS" ] || { echo "extract produced no $D" >&2; exit 1; }
+    mkdir -p "$T/step-0/$(dirname "$D")"
+    cp "$CSS" "$T/step-0/$D"
+    continue
+  fi
   TARGET=$(echo "$D" | sed 's|\.\([a-z]*\)$|.v\1_c|')
   mkdir -p "$T/step-0/$(dirname "$D")"
   echo "+ decompiling $TARGET" >&2
@@ -39,11 +76,17 @@ done
 for P in $PATCHES; do
   N=$((N + 1)); W="$T/step-$N"
   mkdir -p "$W"; cp -r "$T/step-$((N - 1))/." "$W/"
-  TARGETS=$(grep '^--- a/' "$P" | cut -d/ -f2-)
+  TARGETS=$(grep '^+++ b/' "$P" | sed 's|^+++ b/||' | grep -v '^/dev/null$' || true)
   [ -n "$TARGETS" ] || { echo "$P has no diff paths" >&2; exit 1; }
   git -C "$W" apply "$PWD/$P" \
     || { echo "$P does not apply - re-derive it (or it conflicts with an earlier patch)" >&2; exit 1; }
   for D in $TARGETS; do
+    if is_raw "$D"; then
+      echo "+ staging raw $D (no compile)" >&2
+      mkdir -p "$T/stage/$(dirname "$D")"
+      cp "$W/$D" "$T/stage/$D"
+      continue
+    fi
     TARGET=$(echo "$D" | sed 's|\.\([a-z]*\)$|.v\1_c|')
     TB=$(basename "$TARGET")
     mkdir -p "$T/content/citadel_addons/badge/$(dirname "$D")"

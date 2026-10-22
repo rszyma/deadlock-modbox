@@ -1,0 +1,35 @@
+# Click outside the imbue dialog to cancel it.
+#
+# Clicking the dimmed area around the imbue/ability-select dialog
+# cancels it, the same as pressing ESC or its Cancel button. This
+# uses the same pattern as click-outside-close-shop: the dialog
+# root carries the Cancel action, and the dialog content block
+# carries an empty onactivate so clicks inside the dialog (slots,
+# buttons, gaps) never close it - only the area outside does. The
+# root is forced full-screen so there is an outside to click.
+#
+--- a/panorama/layout/popups/popup_activated_ability_selection.xml
++++ b/panorama/layout/popups/popup_activated_ability_selection.xml
+@@ -4,8 +4,8 @@
+ 		<include src="s2r://panorama/styles/citadel_base_styles.vcss" />
+ 		<include src="s2r://panorama/styles/popups/popup_activated_ability_selection.vcss" />
+ 	</styles>
+-	<PopupActivatedAbilitiesSelection class="PopupPanel Hidden" popupbackground="dim" oncancel="UIPopupButtonClicked( CitadelShopPurchaseDialogCanceled() )">
+-		<Panel class="ActilitiesSelectionContainer">
++	<PopupActivatedAbilitiesSelection class="PopupPanel Hidden" popupbackground="dim" oncancel="UIPopupButtonClicked( CitadelShopPurchaseDialogCanceled() )" onactivate="UIPopupButtonClicked( CitadelShopPurchaseDialogCanceled() )">
++		<Panel class="ActilitiesSelectionContainer" onactivate="">
+ 			<Panel id="ModToPurchaseContainer">
+ 				<Panel class="LeftRightFlow topModContainer">
+ 					<CitadelModIcon id="ModIconToSell" class="modIconButton" />
+--- a/panorama/styles/popups/popup_activated_ability_selection.css
++++ b/panorama/styles/popups/popup_activated_ability_selection.css
+@@ -249,3 +249,9 @@
+ 	color: #F3F0E744;
+ }
+ 
++
++PopupActivatedAbilitiesSelection
++{
++	width: 100%;
++	height: 100%;
++}

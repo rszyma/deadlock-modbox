@@ -9,6 +9,9 @@
   # since game files are passed via extra-sandbox-paths and are not derivation inputs.
   # (it's a kind of a hidden input though).
   gameVersion,
+  # Optional unpacked Reduced_CSDK_12 tree (see CSDK_PATH in ./build.sh).
+  # Skips the flaky Google Drive fetch.
+  csdkPath ? "",
 }:
 let
   lock = builtins.fromJSON (builtins.readFile ./flake.lock);
@@ -17,12 +20,14 @@ let
     url = "https://github.com/${np.owner}/${np.repo}/archive/${np.rev}.tar.gz";
     sha256 = np.narHash;
   }) { };
+  # Local CSDK tree (CSDK_PATH) or the pinned fetch when empty.
+  csdk = if csdkPath == "" then pkgs.callPackage ./nix/packages/deadlock-csdk.nix { } else csdkPath;
   tc = {
-    deadlock-csdk = pkgs.callPackage ./nix/packages/deadlock-csdk.nix { };
+    deadlock-csdk = csdk;
     # Vendored from nixpkgs (see nix/packages/source2viewer-cli/README.md).
     source2viewer-cli = pkgs.callPackage ./nix/packages/source2viewer-cli/package.nix { };
     deadlock-resourcecompiler =
-      (pkgs.callPackage ./nix/packages/make-csdk-tool.nix { }) "deadlock-resourcecompiler"
+      (pkgs.callPackage ./nix/packages/make-csdk-tool.nix { inherit csdk; }) "deadlock-resourcecompiler"
         "resourcecompiler.exe";
   };
   allMods = map (pkgs.lib.removeSuffix ".patch") (
