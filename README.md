@@ -24,8 +24,9 @@ Detect mod collisions at build time. Mods are compiled and merged into a single 
 - **Click outside to close shop** - clicking empty areas around the shop (side margins, the search column's empty areas) exits the upgrade shop, same as ESC. Uses the vanilla pattern from the shop's own Back footer (a plain panel with onactivate), applied at three levels so transparent overlays cannot swallow the click. Clicks on items, buttons and text entries are claimed by that content, and gaps between items are explicitly excluded - only the areas outside the content close it.
 - **Click outside to close imbue dialog** - clicking the dimmed area around the imbue/ability-select dialog cancels it, same as ESC or its Cancel button. Same pattern: the dialog root carries the Cancel action and is forced full-screen, while the dialog content block swallows its own clicks so slots and buttons are unaffected.
 - **Imbue cancel with mouse back** - pressing the mouse back button (mouse4) while the imbue/ability-select dialog is open cancels it, exactly like ESC. Capture happens below the game keybinds in panorama's own keybind file, so it works even when mouse4 is also bound to a game action like dash. No settings changes needed.
+- **ESC Play button** - adds a Play button to the ESC pause menu, like QOL Lock does, so you can open the match-launch page without Hideout terminals. Standalone alternative to QOL Lock - this adds only Play.
 
-Q: Only 7 mods?\
+Q: Only 8 mods?\
 A: Currently yes :P. But the point is to spread the idea. Hopefully we will get more mods as .patch files with time!
 
 ## Usage - building .vpk file
