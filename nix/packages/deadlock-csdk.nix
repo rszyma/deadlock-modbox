@@ -4,7 +4,14 @@ pkgs.stdenvNoCC.mkDerivation {
   name = "Reduced_CSDK_12";
 
   src = pkgs.fetchurl {
-    url = "https://drive.usercontent.google.com/download?id=1-Z-4CszWQNudzwzs6e6abPsp5RGFOURS&export=download&confirm=t";
+    urls = [
+      # Original gdrive download link from https://deadlockmodding.pages.dev/modding-tools/csdk-12.
+      # Download via nix/curl often fails (even though via browser always works),
+      # so I've set up a mirror on Cloudflare R2, so at least 1 stable mirror is up.
+      "https://drive.usercontent.google.com/download?id=1-Z-4CszWQNudzwzs6e6abPsp5RGFOURS&export=download&confirm=t"
+      "https://pub-e045e6ce2c594838a11c17b87ad8cfa5.r2.dev/Reduced_CSDK_12.zip"
+    ];
+    name = "Reduced_CSDK_12.zip";
     hash = "sha256-teK/qVj8zre8Lm8OlyPtyRTcudy/3ZcXvKQt3kguk68=";
   };
 
