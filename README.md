@@ -2,17 +2,41 @@
 
 ![modbox logo](assets/logo.svg)
 
-Deadlock mods on Linux the opensource way.
+> Composable Deadlock UI mods built from .patch files.
 
-## Introduction
+## What this project solves
 
-Deadlock mods on Sites like Gamebanana are distributed in compiled, human-unreadable form, making them much harder to audit and modify. In modbox this is not the case - mods are available as plain .patch files.
+A Problem: Deadlock mods on sites like Gamebanana are distributed as .vpk files, which is a compiled, human-unreadable format, making them hard to audit and modify.
 
-Unlike other existing solutions for Deadlock modding, Modbox enables compiling .vpk on Linux from CLI interface. This enables LLMs to make mods more easily.
+An even bigger problem with these, is that .vpk's are often incompatible with each other, and often break on game updates.
 
-Detect mod collisions at build time. Mods are compiled and merged into a single .vpk file, so your mods never unexpectedly stop working trying to override the same game files.
+This project - Modbox - strives to solve (or remedy) the above issues.
+
+## How does it work
+
+In Modbox, mods are available as plain .patch files - this makes them human-readable, and easy to fix / modify / tweak.
+In practice, it also makes mods of often fix themselves after Deadlock update breaks them, just by recompiling them agains latest Deadlock game files.
+
+Mods collisions - all of your selected Modbox mods are compiled and merged into a single .vpk file. Any collisions between Modbox mods are detected at build time, and never collide in a mod manager.
+
+Unlike other existing solutions for Deadlock modding (I know of), Modbox enables compiling .vpk natively on Linux, from CLI interface. This also makes mods creation with LLMs first-class.
+
+### Comparison table
+
+| | classic mods (.vpk) | Modbox mods (.patch) |
+|---|---|---|
+| Can you tell which game files it edits and how? | ❌ not easily; requires decompilation and diff tools to see what changed | ✅ yes; A mod is a plain-text file of changes, that should be applied to game files |
+| When two mods edit the same game file | ❌ such mods are incompatible; second mod overwrites the first | ✅ both mods usually easily merge into one build<sup>*<sup> |
+| When Deadlock updates and mods break | ❌ every mod author must reupload, you wait | ✅ often fixes itself after rebuild; can be done automatically on game launch |
+| Mods for models, sounds, textures | ✅ supported, may change any resource type | ❌ not supported; patches only cover panorama UI files such as .xml / .css / .js |
+
+> *: the only exception is when both mods touch the same lines/parts of gamefiles, which is quite rare for mods that change different things.
 
 ## Mod list in this repository
+
+This repository contains several UI mods.
+They are completely usable and kept up to date (by me),
+and serve as examples of how mods made with Modbox look like.
 
 - **Remove Esc Menu Animations** - removes the open/close animations from the pause menu, it opens instantly.
 - **Always show ability suggestions** - Deadlock marks the
@@ -26,13 +50,14 @@ Detect mod collisions at build time. Mods are compiled and merged into a single 
 - **Imbue cancel with mouse back** - pressing the mouse back button (mouse4) while the imbue/ability-select dialog is open cancels it, exactly like ESC. Capture happens below the game keybinds in panorama's own keybind file, so it works even when mouse4 is also bound to a game action like dash. No settings changes needed.
 - **ESC Play button** - adds a Play button to the ESC pause menu, like QOL Lock does, so you can open the match-launch page without Hideout terminals. Standalone alternative to QOL Lock - this adds only Play.
 
-Q: Only 8 mods?\
-A: Currently yes :P. But the point is to spread the idea. Hopefully we will get more mods as .patch files with time!
 
-## Usage - building .vpk file
+## Building mods
 
-You need [Nix](https://nixos.org/download/) and the game installed
-through Steam.
+The above mods are located in `./mods` directory. Each `.patch` file there is a separate mod, that might be build as standalone `.vpk`, or combined together with other mods (`.patch` files) into a single `.vpk`.
+
+First, following dependencies are required:
+- [Nix](https://nixos.org/download/) package manager (build tool)
+- the Deadlock game installed through Steam.
 
 Then, building .vpk from `./mods` directory is done end-to-end using `build.sh` command. Examples:
 ```bash
@@ -46,20 +71,22 @@ Then, building .vpk from `./mods` directory is done end-to-end using `build.sh` 
 ./build.sh always-show-ability-suggestions hide-upgrade-reminder
 ```
 
-This produces `result/pak75_dir.vpk` (or `result-<mods>/<mods>.vpk` for a selection). Take the file and install it with your mod manager (I recommend Grimoire).
+After the build successfully completes, you will see a path to VPK file.
+This file is ready to be dropped into a game directory, or installed without your mod manager (I recommend Grimoire).
+
+### Troubleshooting
 
 If the CSDK download fails (its Google Drive file changes hash), point the build at a local unpacked `Reduced_CSDK_12` tree instead:
 
 ```bash
 CSDK_PATH=/nix/store/...-Reduced_CSDK_12 ./build.sh
 ```
-Every .patch file in mods/ is a standalone mod, but may also be combined with other mods. Patches to the same file apply cumulatively in listed order, so they compose; if two patches edit the same lines, the build fails loudly instead of silently dropping one.
 
 On game updates, when your mods stop working,
 first try to rebuild whem using `./build.sh` (as above).
-Chances are your issue will get fixed by itself, but there's also a chance the patch stopped working and might need an adjustment.
+Chances are your issue will get fixed by itself, but there's also a chance the patch stopped working and needs an adjustment.
 
-## Adding new mods
+## Creating new mods
 
 Mods are text edits to the game's UI files, stored as `mods/*.patch`
 (one file per mod, named after the mod). To make one:
