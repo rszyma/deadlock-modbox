@@ -5,11 +5,12 @@ pkgs.stdenvNoCC.mkDerivation {
 
   src = pkgs.fetchurl {
     urls = [
-      # Original gdrive download link from https://deadlockmodding.pages.dev/modding-tools/csdk-12.
-      # Download via nix/curl often fails (even though via browser always works),
-      # so I've set up a mirror on Cloudflare R2, so at least 1 stable mirror is up.
-      "https://drive.usercontent.google.com/download?id=1-Z-4CszWQNudzwzs6e6abPsp5RGFOURS&export=download&confirm=t"
+      # The gdrive download link comes from https://deadlockmodding.pages.dev/modding-tools/csdk-12.
+      # The R2 URL is a mirror hosted by me, and used here because downloading via nix/curl
+      # from gdrive often fails - with status 200 and the content returned is html about rate limiting.
+      # That's why R2 link is tried first - because trying gdrive first would often fail on hash mismatch.
       "https://pub-e045e6ce2c594838a11c17b87ad8cfa5.r2.dev/Reduced_CSDK_12.zip"
+      "https://drive.usercontent.google.com/download?id=1-Z-4CszWQNudzwzs6e6abPsp5RGFOURS&export=download&confirm=t"
     ];
     name = "Reduced_CSDK_12.zip";
     hash = "sha256-teK/qVj8zre8Lm8OlyPtyRTcudy/3ZcXvKQt3kguk68=";

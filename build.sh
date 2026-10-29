@@ -55,6 +55,9 @@ if [ -n "${CSDK_PATH:-}" ]; then
   CSDK_SANDBOX="/csdk"
   SANDBOX_PATHS="$SANDBOX_PATHS $CSDK_SANDBOX=$CSDK_REAL"
   CSDK_NIX_ARGS=(--argstr csdkPath "$CSDK_SANDBOX")
+else
+  # Pre-fetch csdk and setup gcroot; it's quite large download (2.4G) and would be a shame if it were to be deleted by nix GC.
+  nix build -L .#deadlock-csdk --out-link nix/.gcroots/deadlock-csdk
 fi
 
 if [ $# -eq 0 ]; then
