@@ -14,6 +14,8 @@ This project - Modbox - strives to solve (or remedy) the above issues.
 
 ## How does it work
 
+The patch form follows the Source 2 DiffMod spec at https://source2-diffmod.org/spec.
+
 In Modbox, mods are available as plain .patch files - this makes them human-readable, and easy to fix / modify / tweak.
 In practice, it also makes mods of often fix themselves after Deadlock update breaks them, just by recompiling them agains latest Deadlock game files.
 
