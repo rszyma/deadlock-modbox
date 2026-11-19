@@ -79,7 +79,7 @@ trace)
   export WINEPREFIX="$T/wineprefix" WINEDEBUG=-all
   export WINEDLLOVERRIDES="${WINEDLLOVERRIDES:-d3d11,dxgi=n}"
   export VK_ICD_FILENAMES="${VK_ICD_FILENAMES:-$VKICD_JSON}"
-  export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:$VKLIB_DIR"
+  export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$VKLIB_DIR"
   if [ ! -f "$WINEPREFIX/drive_c/windows/system32/dxgi.dll" ]; then
     mkdir -p "$WINEPREFIX/drive_c/windows/system32"
     tar -xzf "$DXVK_TGZ" -C "$WINEPREFIX/drive_c/windows/system32" \
@@ -88,13 +88,13 @@ trace)
   unset DISPLAY
   zpath() { echo "Z:${1//\//\\}"; }
   # Decompile Panorama sources, then compile one file back.
-  # Note: -f with an exact file path dumps nothing in S2V 20.1,
-  # so dump by extension and pick the file from the tree.
   # hud_escape_menu exercises layout plus style includes.
+  # With an existing -o folder, S2V writes the file at its VPK path (cleartext suffix).
+  mkdir -p "$T/fresh"
   Source2Viewer-CLI -i "$GAME/citadel/pak01_dir.vpk" -d \
-    -o "$T/fresh" -e vxml_c,vcss_c
-  SRC="$(find "$T/fresh" -name hud_escape_menu.xml | head -n 1)"
-  [ -n "$SRC" ] || { echo "decompile gave no file" >&2; exit 1; }
+    -o "$T/fresh" -f panorama/layout/hud_escape_menu.vxml_c
+  SRC="$T/fresh/panorama/layout/hud_escape_menu.xml"
+  [ -f "$SRC" ] || { echo "decompile gave no file" >&2; exit 1; }
   mkdir -p "$T/content/citadel_addons/badge/panorama/layout"
   cp "$SRC" "$T/content/citadel_addons/badge/panorama/layout/hud_escape_menu.xml"
   (cd "$T/game" && strace -f -e trace=%file -o "$OUT/trace.log" \
@@ -132,9 +132,10 @@ repack)
 verify)
   [ -n "$REF" ] && [ -n "$NEW" ] || {
     echo "usage: trim-csdk.sh verify --ref DIR --new DIR" >&2; exit 1; }
+  SUMS="$(mktemp)"; trap 'rm -f "$SUMS"' EXIT
   diff -r "$REF" "$NEW" \
-    && (cd "$REF" && find . -type f | sort | xargs sha256sum) > /tmp/trim-ref.sums \
-    && (cd "$NEW" && sha256sum -c /tmp/trim-ref.sums) \
+    && (cd "$REF" && find . -type f | sort | xargs sha256sum) > "$SUMS" \
+    && (cd "$NEW" && sha256sum -c "$SUMS") \
     && echo "TREES MATCH"
   ;;
 report)
