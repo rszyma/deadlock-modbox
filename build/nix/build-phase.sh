@@ -100,12 +100,9 @@ for P in $PATCHES; do
     cp "$OUT" "$T/stage/$TARGET"
   done
 done
-# Normalize mtimes so the pack steps below are deterministic:
-# same patch plus same game build gives same bytes.
-find "$T/stage" -exec touch -d @0 {} +
-# Pack with the python vpk tool instead of the CSDK CSDKCfgVPK.exe:
-# scriptable and fast.
-vpk "$T/$VPKNAME" -c "$T/stage"
+# Pack with the python vpk library (scriptable and fast), in sorted order:
+# same DiffMods plus same game build give the same VPK bytes.
+python3 "$PACK_VPK" "$T/stage" "$T/$VPKNAME"
 # Debug: ship the patched cleartext sources plus the compiled outputs
 # in the debug output, so a build can be inspected without rebuilding
 # (result*-debug links). Skipped unless $DEBUG is set.
@@ -127,5 +124,7 @@ fi
 # Skipped unless $RELEASE is set.
 if [ -n "${RELEASE:-}" ]; then
   mkdir -p "$T/release"
+  # 7z stores the file mtime: reset it, so the archive bytes are reproducible too.
+  touch -d @0 "$T/$VPKNAME"
   7z a "$T/release/${VPKNAME%.vpk}.7z" "$T/$VPKNAME"
 fi
