@@ -44,7 +44,7 @@ unset it where a real GPU exists.
 ## Notes
 
 - First build downloads ~2.6GB (hash-pinned; a replaced upstream file
-  fails loudly - re-pin the hash in `nix/packages/deadlock-csdk.nix`).
+  fails loudly - re-pin the hash in `nix-toolchain/deadlock-csdk/package.nix`).
 - The CSDK predates the current engine. Compiled panorama loads fine;
   other compiled assets (models, materials, textures) are unverified and
   may be silently ignored.

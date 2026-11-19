@@ -7,20 +7,20 @@
       systems = [ "x86_64-linux" ];
       forAll = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
       toolchain = pkgs: {
-        deadlock-csdk = pkgs.callPackage ./nix/packages/deadlock-csdk.nix { };
-        # Vendored from nixpkgs (see nix/packages/source2viewer-cli/README.md).
-        source2viewer-cli = pkgs.callPackage ./nix/packages/source2viewer-cli/package.nix { };
+        deadlock-csdk = pkgs.callPackage ./nix-toolchain/deadlock-csdk/package.nix { };
+        # Vendored from nixpkgs (see nix-toolchain/source2viewer-cli/README.md).
+        source2viewer-cli = pkgs.callPackage ./nix-toolchain/source2viewer-cli/package.nix { };
         deadlock-resourcecompiler =
-          (pkgs.callPackage ./nix/packages/make-csdk-tool.nix { }) "deadlock-resourcecompiler"
+          (pkgs.callPackage ./nix-toolchain/make-csdk-tool/package.nix { }) "deadlock-resourcecompiler"
             "resourcecompiler.exe";
         deadlock-cfgvpk =
-          (pkgs.callPackage ./nix/packages/make-csdk-tool.nix { }) "deadlock-cfgvpk"
+          (pkgs.callPackage ./nix-toolchain/make-csdk-tool/package.nix { }) "deadlock-cfgvpk"
             "CSDKCfgVPK.exe";
       };
     in
     {
-      # Following packages make a toolchain building mods (see nix/README.md).
-      # For mod builder itself see ./build.sh instead.
+      # Following packages make a toolchain building mods (see nix-toolchain/README.md).
+      # For mod builder itself see ./build/nix/build.sh instead.
       packages = forAll (pkgs: {
         inherit (toolchain pkgs)
           deadlock-csdk

@@ -18,9 +18,9 @@ Updating (same flow as nixpkgs, see update.sh):
 ```bash
 # 1. bump `version` in package.nix
 # 2. delete the `hash`, rebuild once to read the real one from the error:
-#    nix-build -E 'with import <nixpkgs> {}; callPackage ./nix/packages/source2viewer-cli/package.nix {}'
+#    nix-build -E 'with import <nixpkgs> {}; callPackage ./nix-toolchain/source2viewer-cli/package.nix {}'
 #    (a stale-but-valid hash silently reuses the OLD sources from the store,
 #    so never guess - always read the `got:` line)
-nix-build -E 'with import <nixpkgs> {}; (callPackage ./nix/packages/source2viewer-cli/package.nix {}).fetch-deps' -o /tmp/s2v-fetch-deps
+nix-build -E 'with import <nixpkgs> {}; (callPackage ./nix-toolchain/source2viewer-cli/package.nix {}).fetch-deps' -o /tmp/s2v-fetch-deps
 /tmp/s2v-fetch-deps   # regenerates deps.json in place, no args needed
 ```

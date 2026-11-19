@@ -13,7 +13,7 @@
   debug ? true,
   release ? true,
   # VersionDate+VersionTime from the game's steam.inf, baked in by
-  # ./build.sh via a generated wrapper flake (flake refs take no
+  # build/nix/build.sh via a generated wrapper flake (flake refs take no
   # arguments). Keys the derivation, so game updates rebuild through the
   # normal cache.
   gameVersion,
@@ -21,7 +21,7 @@
 
 let
   # The game dir is mounted into the sandbox at build time (chroot kept):
-  #   ./build.sh
+  #   build/nix/build.sh
   gameMount = "/deadlock";
 in
 stdenvNoCC.mkDerivation {
@@ -46,7 +46,7 @@ stdenvNoCC.mkDerivation {
     p7zip
   ];
   buildPhase = ''
-    source ${../../tools/build-phase.sh}
+    source ${./build-phase.sh}
   '';
   installPhase = ''
     mkdir -p $out

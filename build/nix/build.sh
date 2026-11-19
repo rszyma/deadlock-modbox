@@ -2,7 +2,7 @@
 # Build a VPK from selected patches from ./mod directory.
 # Args: with no args defaults to all patches; with mod names builds just those.
 #
-#   ./build.sh [mod...]
+#   build/nix/build.sh [mod...]
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"; PROJ_ROOT="$PWD"
@@ -57,7 +57,7 @@ if [ -n "${CSDK_PATH:-}" ]; then
   CSDK_NIX_ARGS=(--argstr csdkPath "$CSDK_SANDBOX")
 else
   # Pre-fetch csdk and setup gcroot; it's quite large download (2.4G) and would be a shame if it were to be deleted by nix GC.
-  nix build -L .#deadlock-csdk --out-link nix/.gcroots/deadlock-csdk
+  nix build -L .#deadlock-csdk --out-link .gcroots/deadlock-csdk
 fi
 
 if [ $# -eq 0 ]; then
@@ -78,6 +78,7 @@ out_path=$(nix shell nixpkgs#nix -c nix-build \
   --argstr gameVersion "$GAMEVERSION" \
   "${CSDK_NIX_ARGS[@]}" \
   -o "$RESULT_LINK" \
+  build/nix \
   # --no-build-output \
 )
 echo

@@ -1,7 +1,7 @@
 {
   pkgs,
-  csdk ? pkgs.callPackage ./deadlock-csdk.nix { },
-  dxvkDlls ? pkgs.callPackage ./dxvk-dlls.nix { },
+  csdk ? pkgs.callPackage ../deadlock-csdk/package.nix { },
+  dxvkDlls ? pkgs.callPackage ../dxvk-dlls/package.nix { },
 }:
 
 # CSDK_BIN selects the binary flavor: bin | bin_cs2 | bin_server | bin_tools.

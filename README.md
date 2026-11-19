@@ -59,16 +59,16 @@ First, following dependencies are required:
 - [Nix](https://nixos.org/download/) package manager (build tool)
 - the Deadlock game installed through Steam.
 
-Then, building .vpk from `./mods` directory is done end-to-end using `build.sh` command. Examples:
+Then, building .vpk from `./mods` directory is done end-to-end using `build/nix/build.sh` command. Examples:
 ```bash
 # build all mods in ./mods directory as one .vpk
-./build.sh
+./build/nix/build.sh
 
 # build a single mod to standalone .vpk (./mods/remove-esc-menu-animations.patch)
-./build.sh remove-esc-menu-animations
+./build/nix/build.sh remove-esc-menu-animations
 
 # combine 2 mods to a single .vpk
-./build.sh always-show-ability-suggestions hide-upgrade-reminder
+./build/nix/build.sh always-show-ability-suggestions hide-upgrade-reminder
 ```
 
 After the build successfully completes, you will see a path to VPK file.
@@ -79,11 +79,11 @@ This file is ready to be dropped into a game directory, or installed without you
 If the CSDK download fails (its Google Drive file changes hash), point the build at a local unpacked `Reduced_CSDK_12` tree instead:
 
 ```bash
-CSDK_PATH=/nix/store/...-Reduced_CSDK_12 ./build.sh
+CSDK_PATH=/nix/store/...-Reduced_CSDK_12 ./build/nix/build.sh
 ```
 
 On game updates, when your mods stop working,
-first try to rebuild whem using `./build.sh` (as above).
+first try to rebuild whem using `./build/nix/build.sh` (as above).
 Chances are your issue will get fixed by itself, but there's also a chance the patch stopped working and needs an adjustment.
 
 ## Creating new mods
