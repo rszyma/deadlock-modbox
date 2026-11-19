@@ -26,6 +26,8 @@
           ;
         # Mirror-vs-upstream check: `nix run .#verify-csdk -- <gdrive zip>`.
         verify-csdk = (toolchain pkgs).deadlock-csdk.verify;
+        # Trim blob check: `nix run .#verify-csdk-trim -- <rebuilt-tree> [url]`.
+        verify-csdk-trim = (pkgs.callPackage ./nix-toolchain/deadlock-trim-csdk-bin/package.nix { }).verify;
       });
 
       devShells = forAll (pkgs: {
@@ -35,6 +37,9 @@
             (toolchain pkgs).source2viewer-cli
             pkgs.python3Packages.vpk
             pkgs.python3
+            pkgs.just
+            pkgs.rclone
+            pkgs.strace
           ];
         };
       });

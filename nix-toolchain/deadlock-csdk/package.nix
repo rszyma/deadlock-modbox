@@ -6,6 +6,10 @@ in
 pkgs.stdenvNoCC.mkDerivation {
   name = "Reduced_CSDK_12";
 
+  # NOTE:
+  # The download quite large at ~3GB (6GB unpacked on disk)
+  # We don't need all the files from the Reduced_CSDK_12 so see ../deadlock-trim-csdk instead,
+  # which is much smaller at ~100 MB DL (~300 MB unpacked), but works identical for our purposes.
   src = pkgs.fetchurl {
     urls = [
       # The gdrive download link comes from https://deadlockmodding.pages.dev/modding-tools/csdk-12.
