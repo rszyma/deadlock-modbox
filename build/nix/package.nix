@@ -1,7 +1,7 @@
 {
   lib,
   stdenvNoCC,
-  python3Packages,
+  python3,
   p7zip,
   git,
   source2viewer-cli,
@@ -42,11 +42,12 @@ stdenvNoCC.mkDerivation {
   # The mounted game is a hidden input by design (see README);
   # We need to pass outside value to force rebuild on game update.
   _GAME_VERSION = gameVersion;
+  PACK_VPK = ../pack-vpk.py;
   nativeBuildInputs = [
     deadlock-resourcecompiler
     source2viewer-cli
     git
-    python3Packages.vpk
+    (python3.withPackages (ps: [ ps.vpk ]))
     p7zip
   ];
   buildPhase = ''
