@@ -1,0 +1,11 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Context lines of an empty source line are a single space: keep it.
+[*.patch]
+trim_trailing_whitespace = false
+insert_final_newline = false
