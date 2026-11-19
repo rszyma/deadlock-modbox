@@ -55,8 +55,10 @@
             pkgs.python3Packages.vpk
             pkgs.python3
             pkgs.just
+            pkgs.bindfs
             pkgs.rclone
             pkgs.strace
+            pkgs.zstd
             (treefmt pkgs)
           ];
         };

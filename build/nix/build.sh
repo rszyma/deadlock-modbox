@@ -1,78 +1,40 @@
 #!/usr/bin/env bash
-# Build a VPK from selected patches from ./mod directory.
-# Args: with no args defaults to all patches; with mod names builds just those.
+# Build one VPK from DiffMods in ./mods, applied in the order given.
+# With no args, builds all of them (alphabetical order).
+# A mod is named by its stem, its file name or its path:
 #
 #   build/nix/build.sh [mod...]
+#   build/nix/build.sh hide-upgrade-reminder mods/esc-play-button.patch
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)"; PROJ_ROOT="$PWD"
+cd "$(git rev-parse --show-toplevel)"
 
-GAME="${GAME_DIR:-$HOME/.steam/steam/steamapps/common/Deadlock/game}"
-MNT=/tmp/deadlock
-
-[ -d "$GAME" ] || { echo "game dir not found: $GAME (set GAME_DIR=... for a custom Steam library)" >&2; exit 1; }
-mkdir -p "$MNT"
-# Re-export via FUSE so the sandbox build (nixbld user) can read the game:
-# direct extra-sandbox-paths on $GAME fails when $HOME is 0700, and FUSE
-# hides mounts from other users by default, hence allow_other below.
-if ! grep -q " $MNT " /proc/mounts 2>/dev/null; then
-  if command -v bindfs >/dev/null 2>&1; then
-    BINDFS=bindfs
-  else
-    BINDFS="$(nix build nixpkgs#bindfs --print-out-paths --no-link)/bin/bindfs"
-  fi
-  # Try unprivileged first: no sudo needed when /etc/fuse.conf enables user_allow_other.
-  if ! "$BINDFS" -o allow_other "$GAME" "$MNT" 2>/dev/null; then
-    echo "unprivileged bindfs failed, retrying with sudo" >&2
-    sudo "$BINDFS" -o allow_other "$GAME" "$MNT" \
-      || { echo "hint: run 'sudo -v' in a terminal first, or enable user_allow_other in /etc/fuse.conf for passwordless mounts" >&2; exit 1; }
-  fi
-fi
-
-GAMEVERSION="$(grep -m1 '^VersionDate=' "$MNT/citadel/steam.inf" | cut -d= -f2 | tr -d '\r') $(grep -m1 '^VersionTime=' "$MNT/citadel/steam.inf" | cut -d= -f2 | tr -d '\r')"
-[ "$GAMEVERSION" != " " ] || { echo "no VersionDate/Time in $MNT/citadel/steam.inf" >&2; exit 1; }
-
-# Optional CSDK override: the Google Drive fetch is flaky (changing hashes),
-# so a local unpacked Reduced_CSDK_12 tree can be used instead:
-#   CSDK_PATH=/nix/store/...-Reduced_CSDK_12 ./build.sh ...
-# The path is passed as a plain string on purpose: as a path value nix
-# would ingest the whole 6 GB tree into the store on every evaluation.
-# A bare string keeps eval instant, but then the tree is not part of the
-# derivation closure - and this sandbox only exposes the closure, not the
-# whole store. So the tree is bind-mounted into the sandbox explicitly
-# (same mechanism as /deadlock above), and the string just points at it.
-# The tree must exist (and stay) on the host; root a store copy once, e.g.:
-#   nix-store --realise <path> --add-root /nix/var/nix/gcroots/csdk-local
-CSDK_SANDBOX=""
-CSDK_NIX_ARGS=()
-SANDBOX_PATHS="/deadlock=$MNT"
-if [ -n "${CSDK_PATH:-}" ]; then
-  [ -d "$CSDK_PATH" ] || { echo "CSDK_PATH is not a directory: $CSDK_PATH" >&2; exit 1; }
-  for f in game/bin_cs2/win64/resourcecompiler.exe game/citadel/bin game/core/panorama/panorama_config.txt; do
-    [ -e "$CSDK_PATH/$f" ] || { echo "CSDK_PATH looks wrong, missing $f (want an unpacked Reduced_CSDK_12)" >&2; exit 1; }
-  done
-  CSDK_REAL="$(realpath "$CSDK_PATH")"
-  CSDK_SANDBOX="/csdk"
-  SANDBOX_PATHS="$SANDBOX_PATHS $CSDK_SANDBOX=$CSDK_REAL"
-  CSDK_NIX_ARGS=(--argstr csdkPath "$CSDK_SANDBOX")
+MODS=""
+for MOD in "$@"; do
+  M="${MOD#.#}"
+  M="${M#mods/}"
+  M="${M%.patch}"
+  case "$M" in
+    *.vpk) echo "$MOD is a companion name (*.vpk.patch); Modbox builds plain DiffMods only" >&2; exit 1 ;;
+  esac
+  [ -f "mods/$M.patch" ] || { echo "no such mod: $MOD (see mods/)" >&2; exit 1; }
+  MODS="${MODS:+$MODS }$M"
+done
+if [ -z "$MODS" ]; then
+  RESULT_LINK="result"
 else
-  # Pre-fetch csdk and setup gcroot; it's quite large download (2.4G) and would be a shame if it were to be deleted by nix GC.
-  nix build -L .#deadlock-csdk --out-link .gcroots/deadlock-csdk
-fi
-
-if [ $# -eq 0 ]; then
-  MODS=""; RESULT_LINK="result"
-else
-  MODS=""
-  for MOD in "$@"; do
-    M="${MOD#.#}"
-    [ -f "mods/$M.patch" ] || { echo "no such mod: $M (see mods/)" >&2; exit 1; }
-    MODS="${MODS:+$MODS }$M"
-  done
   RESULT_LINK="result-$(echo "$MODS" | tr ' ' '+')"
 fi
 
-# N.B. `nix build` doesn't support argstr.
+CSDK_ARG=csdkPath
+source build/nix/game-env.sh
+
+if [ -z "${CSDK_PATH:-}" ]; then
+  # Pre-fetch the CSDK with a gcroot: it is a large download (about 3 GB), and nix GC must not delete it.
+  nix build -L .#deadlock-csdk --out-link .gcroots/deadlock-csdk
+fi
+
+# nix-build, not nix build: only nix-build takes --argstr.
 nix-build \
   --option extra-sandbox-paths "$SANDBOX_PATHS" \
   --argstr mods "$MODS" \
@@ -80,11 +42,12 @@ nix-build \
   "${CSDK_NIX_ARGS[@]}" \
   -o "$RESULT_LINK" \
   build/nix
-  # --no-build-output \necho
 out_path=$(readlink -f "$RESULT_LINK")
 drv=$(nix-store -q --deriver "$out_path")
 debug_path=$(nix-store -q --outputs "$drv" | grep -- '-debug$')
 ln -sfn "$debug_path" "$RESULT_LINK-debug"
-echo "debug:" "$debug_path"
-echo "VPK:" $out_path/*.vpk
-echo "7z:" "$debug_path"/release/*.7z
+echo "debug: $debug_path"
+for f in "$out_path"/*.vpk; do echo "VPK: $f"; done
+for f in "$debug_path"/release/*.7z; do
+  if [ -e "$f" ]; then echo "7z: $f"; fi
+done
