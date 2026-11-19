@@ -100,6 +100,9 @@ for P in $PATCHES; do
     cp "$OUT" "$T/stage/$TARGET"
   done
 done
+# Normalize mtimes so the pack steps below are deterministic:
+# same patch plus same game build gives same bytes.
+find "$T/stage" -exec touch -d @0 {} +
 # Pack with the python vpk tool instead of the CSDK CSDKCfgVPK.exe:
 # scriptable and fast.
 vpk "$T/$VPKNAME" -c "$T/stage"
