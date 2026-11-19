@@ -1,0 +1,20 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  treefmt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
+      # Builds only the flake formatter: treefmt, nixfmt and shellcheck come from the binary
+      # cache. The dev shell (Wine, the Source2Viewer-CLI dotnet build) is not evaluated.
+      - run: nix fmt -- --ci

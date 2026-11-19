@@ -14,10 +14,24 @@
           (pkgs.callPackage ./nix-toolchain/make-csdk-tool/package.nix { }) "deadlock-resourcecompiler"
             "resourcecompiler.exe";
       };
+      # treefmt with its tools on PATH (see treefmt.toml).
+      # A plain writeShellScriptBin: its build runs no check, so CI only fetches cached tools.
+      treefmt =
+        pkgs:
+        pkgs.writeShellScriptBin "treefmt" ''
+          export PATH=${
+            pkgs.lib.makeBinPath [
+              pkgs.treefmt
+              pkgs.nixfmt
+              pkgs.shellcheck
+            ]
+          }:$PATH
+          exec treefmt "$@"
+        '';
     in
     {
-      # Following packages make a toolchain building mods (see nix-toolchain/README.md).
-      # For mod builder itself see ./build/nix/build.sh instead.
+      # The toolchain that builds mods (see nix-toolchain/README.md).
+      # The mod builder itself is build/nix/build.sh.
       packages = forAll (pkgs: {
         inherit (toolchain pkgs)
           deadlock-csdk
@@ -30,9 +44,12 @@
         verify-csdk-trim = (pkgs.callPackage ./nix-toolchain/deadlock-trim-csdk-bin/package.nix { }).verify;
       });
 
+      # `nix fmt`; CI runs `nix fmt -- --ci`.
+      formatter = forAll treefmt;
+
       devShells = forAll (pkgs: {
         default = pkgs.mkShell {
-          buildInputs = [
+          packages = [
             (toolchain pkgs).deadlock-resourcecompiler
             (toolchain pkgs).source2viewer-cli
             pkgs.python3Packages.vpk
@@ -40,6 +57,7 @@
             pkgs.just
             pkgs.rclone
             pkgs.strace
+            (treefmt pkgs)
           ];
         };
       });
