@@ -1,3 +1,13 @@
+# Run with `nix fmt` (or `treefmt` inside `nix develop`). CI runs `nix fmt -- --ci`.
+
 [formatter.nix]
 command = "nixfmt"
 includes = ["*.nix"]
+
+# A linter, not a formatter: it changes no file, and a finding fails the run.
+[formatter.shellcheck]
+command = "shellcheck"
+options = ["--external-sources"]
+includes = ["*.sh"]
+# Vendored from nixpkgs as it is; deleted once nixpkgs ships the package (see its README).
+excludes = ["nix-toolchain/source2viewer-cli/update.sh"]
