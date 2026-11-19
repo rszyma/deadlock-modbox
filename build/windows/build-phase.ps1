@@ -12,25 +12,21 @@ $VpkName = $env:MODBOX_VPKNAME
 $Result = $env:MODBOX_RESULT
 $T = Join-Path ([System.IO.Path]::GetTempPath()) 'modroot'
 
-function Invoke-Native([string]$Exe, [string[]]$Args, [string]$What) {
-  & $Exe @Args
+function Invoke-Native([string]$Exe, [string[]]$ArgList, [string]$What) {
+  & $Exe @ArgList
   if ($LASTEXITCODE -ne 0) { throw "$What failed (exit $LASTEXITCODE)" }
 }
 function Is-Raw([string]$Path) { return $Path -like '*.cfg' }
 function Compiled-Name([string]$Path) {
-  # panorama/foo.vxml -> panorama/foo.vxml_c (same sed as build-phase.sh)
+  # Deadlock profile suffix map (spec rule 9): panorama/foo.xml -> panorama/foo.vxml_c
+  if ($Path -notmatch '\.(css|xml|js)$') {
+    throw "${Path}: the Deadlock profile maps no suffix $([IO.Path]::GetExtension($Path)) (spec rule 9)"
+  }
   return [regex]::Replace($Path, '\.([a-z]*)$', '.v$1_c')
 }
-function Find-ByName([string]$Dir, [string]$Name) {
-  $hit = Get-ChildItem -Path $Dir -Recurse -Filter $Name -File -ErrorAction SilentlyContinue |
-    Select-Object -First 1
-  if ($null -eq $hit) { return $null }
-  return $hit.FullName
-}
 
-Remove-Item -Recurse -Force $T -ErrorAction SilentlyContinue
-# Drop the junctions explicitly first: Remove-Item -Recurse must never
-# follow them into the CSDK/game trees.
+# Drop the junctions explicitly first: in Windows PowerShell 5.1,
+# Remove-Item -Recurse follows them into the CSDK/game trees.
 foreach ($j in @("$T/game/citadel/bin")) {
   $link = Get-Item $j -Force -ErrorAction SilentlyContinue
   if ($null -ne $link -and $link.LinkType -eq 'Junction') { $link.Delete() }
@@ -76,24 +72,23 @@ foreach ($d in $AllTargets) {
     # Raw files (no compiled _c form in the VPK, e.g. .cfg keybind files)
     # are extracted as-is and staged without resourcecompiler.
     Write-Host "+ extracting raw $d"
+    # With an existing -o folder, S2V writes each file at its VPK path.
+    $fresh = Join-Path $Fresh0 $d
     Invoke-Native $S2v @('-i', $CitadelVpk, '-o', $Fresh0, '-f', $d) "extract of $d"
-    $css = Find-ByName $Fresh0 (Split-Path $d -Leaf)
-    if ($null -eq $css) {
-      # Not in the citadel pack: try the core pack
-      # (e.g. panorama/default_keybinds.cfg).
+    if (-not (Test-Path $fresh)) {
+      # Not in the citadel pack: read the core pack next (Deadlock profile).
       Invoke-Native $S2v @('-i', $CoreVpk, '-o', $Fresh0, '-f', $d) "extract of $d"
-      $css = Find-ByName $Fresh0 (Split-Path $d -Leaf)
     }
-    if ($null -eq $css) { throw "extract produced no $d" }
-    Copy-Item $css (Join-Path $Step0 $d)
+    if (-not (Test-Path $fresh)) { throw "the game VPKs hold no $d" }
+    Copy-Item $fresh (Join-Path $Step0 $d)
     continue
   }
   $Target = Compiled-Name $d
+  $fresh = Join-Path $Fresh0 $d
   Write-Host "+ decompiling $Target"
   Invoke-Native $S2v @('-i', $CitadelVpk, '-d', '-o', $Fresh0, '-f', $Target) "decompile of $d ($Target)"
-  $css = Find-ByName $Fresh0 (Split-Path $d -Leaf)
-  if ($null -eq $css) { throw "decompile produced no $d" }
-  Copy-Item $css (Join-Path $Step0 $d)
+  if (-not (Test-Path $fresh)) { throw "the game VPKs hold no $d" }
+  Copy-Item $fresh (Join-Path $Step0 $d)
 }
 
 $n = 0
@@ -123,36 +118,30 @@ foreach ($p in $Patches) {
       continue
     }
     $Target = Compiled-Name $d
-    $tb = Split-Path $Target -Leaf
     $content = "$T/content/citadel_addons/badge/$d"
     New-Item -ItemType Directory -Force -Path (Split-Path $content -Parent) | Out-Null
     Copy-Item "$w/$d" $content
     # Native resourcecompiler: no Wine, no dxvk, no zpath mangling.
     Invoke-Native (Join-Path $Csdk 'game\bin_cs2\win64\resourcecompiler.exe') `
       @('-v', '-f', '-game', "$T/game/citadel", $content) "compile of $d"
-    $out = Find-ByName "$T/game" $tb
-    if ($null -eq $out) { throw "compile produced no $tb" }
+    $out = "$T/game/citadel_addons/badge/$Target"
+    if (-not (Test-Path $out)) { throw "compile produced no $out" }
     $staged = "$T/stage/$Target"
     New-Item -ItemType Directory -Force -Path (Split-Path $staged -Parent) | Out-Null
     Copy-Item $out $staged
   }
 }
 
-# Normalize mtimes so the pack step below is deterministic:
-# same patch plus same game build gives same bytes.
-$epoch = [datetime]'1970-01-01T00:00:00Z'
-Get-ChildItem -Path "$T/stage" -Recurse | ForEach-Object {
-  $_.LastWriteTimeUtc = $epoch
-}
-# Pack with the same python vpk tool as the nix build, so all runners
-# emit identical bytes. The interpreter is the pinned embeddable
+# Pack with build/pack-vpk.py, the same sorted packer as the nix build.
+# The interpreter is the pinned embeddable
 # distribution bootstrapped by build.ps1 (never a system python:
 # Win11 only ships a Store stub, and versions would drift).
 # (CSDKCfgVPK.exe ships in the CSDK and would drop the bootstrap;
 # its CLI flags are still unconfirmed, so it stays a testing-phase
 # option, not the draft default.)
 $vpkOut = Join-Path $T $VpkName
-Invoke-Native $env:MODBOX_PYTHON @($env:MODBOX_VPKCLI, $vpkOut, '-c', "$T/stage") 'pack'
+$packVpk = Join-Path $PSScriptRoot '..\pack-vpk.py'
+Invoke-Native $env:MODBOX_PYTHON @($packVpk, "$T/stage", $vpkOut) 'pack'
 
 Remove-Item -Recurse -Force $Result -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $Result | Out-Null

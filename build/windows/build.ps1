@@ -37,6 +37,9 @@ if (-not $GameDir) {
 if (-not (Test-Path (Join-Path $GameDir 'citadel\gameinfo.gi'))) {
   Write-Error "game dir not found: $GameDir (set GAME_DIR=... for a custom Steam library)"
 }
+if (-not $CsdkPath) {
+  Write-Error 'CSDK_PATH is not set (want an unpacked Reduced_CSDK_12)'
+}
 foreach ($f in @('game\bin_cs2\win64\resourcecompiler.exe', 'game\citadel\bin',
                  'game\core\panorama\panorama_config.txt')) {
   if (-not (Test-Path (Join-Path $CsdkPath $f))) {
@@ -82,7 +85,7 @@ function Ensure-Git {
 $env:MODBOX_GIT = Ensure-Git
 # Self-contained packer: python.org embeddable zip (~11 MB, no install,
 # no Store, no admin) plus the vpk sdist (pure stdlib, ~100 KB).
-# Same packer as the nix build, so all runners emit identical bytes.
+# build/pack-vpk.py drives the vpk library, same as the nix build.
 function Ensure-Packer {
   $tools = Join-Path (Get-Location) '.tools'
   $py = Join-Path $tools 'python\python.exe'
