@@ -24,6 +24,8 @@
           deadlock-resourcecompiler
           source2viewer-cli
           ;
+        # Mirror-vs-upstream check: `nix run .#verify-csdk -- <gdrive zip>`.
+        verify-csdk = (toolchain pkgs).deadlock-csdk.verify;
       });
 
       devShells = forAll (pkgs: {
