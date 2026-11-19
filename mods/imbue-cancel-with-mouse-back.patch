@@ -1,3 +1,7 @@
+# spec: diffmod/v1
+# title: Imbue cancel with mouse back
+# decompiler: source2viewer-cli/20.1
+#
 # Mouse back button cancels the imbue dialog.
 #
 # Pressing the mouse back button (mouse4) while the imbue or
@@ -5,7 +9,6 @@
 # Capture happens below the game keybinds: panorama's own keybind
 # file routes mouse4 to Cancelled for popups, so the game never
 # sees it as a game key first. No settings changes needed.
-#
 --- a/panorama/citadel_keybinds.cfg
 +++ b/panorama/citadel_keybinds.cfg
 @@ -1,4 +1,5 @@

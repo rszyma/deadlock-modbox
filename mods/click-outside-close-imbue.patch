@@ -1,3 +1,7 @@
+# spec: diffmod/v1
+# title: Click outside to close imbue dialog
+# decompiler: source2viewer-cli/20.1
+#
 # Click outside the imbue dialog to cancel it.
 #
 # Clicking the dimmed area around the imbue/ability-select dialog
@@ -7,7 +11,6 @@
 # carries an empty onactivate so clicks inside the dialog (slots,
 # buttons, gaps) never close it - only the area outside does. The
 # root is forced full-screen so there is an outside to click.
-#
 --- a/panorama/layout/popups/popup_activated_ability_selection.xml
 +++ b/panorama/layout/popups/popup_activated_ability_selection.xml
 @@ -4,8 +4,8 @@

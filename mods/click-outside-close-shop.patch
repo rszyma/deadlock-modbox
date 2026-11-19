@@ -1,3 +1,7 @@
+# spec: diffmod/v1
+# title: Click outside to close shop
+# decompiler: source2viewer-cli/20.1
+#
 # Click outside the shop content to close the shop.
 #
 # Clicking any empty area of the shop (the side margins, gaps between
@@ -10,7 +14,6 @@
 # column on the right) cannot swallow the click first. The item
 # lists block itself carries an empty onactivate so gaps between
 # items do NOT close the shop - only the areas outside the content.
-#
 --- a/panorama/layout/citadel_hud_hero_shop.xml
 +++ b/panorama/layout/citadel_hud_hero_shop.xml
 @@ -16,13 +16,13 @@
