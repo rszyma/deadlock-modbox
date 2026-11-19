@@ -1,12 +1,17 @@
+# spec: diffmod/v1
+# title: Hide ability suggestions in Street Brawl
+# decompiler: source2viewer-cli/20.1
+#
 # Force-hide ability build suggestions in Street Brawl mode.
 #
-# Higher specificity (0,3,0) overrides always-show-ability-suggestions mod (0,2,0) and vanilla rules.
+# Higher specificity (0,3,0) overrides the always-show-ability-suggestions mod (0,2,0)
+# and vanilla rules.
 --- a/panorama/styles/hud_ability_icon.css
 +++ b/panorama/styles/hud_ability_icon.css
 @@ -1722,3 +1722,8 @@
  	font-family: block;
  }
-
+ 
 +
 +.gamemode_streetbrawl .build_suggestion .build_suggestion_container
 +{

@@ -1,0 +1,2 @@
+# DiffMods are byte-exact: no EOL conversion (one target file is CRLF).
+mods/*.patch -text
