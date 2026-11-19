@@ -107,8 +107,8 @@ find "$T/stage" -exec touch -d @0 {} +
 # scriptable and fast.
 vpk "$T/$VPKNAME" -c "$T/stage"
 # Debug: ship the patched cleartext sources plus the compiled outputs
-# alongside the vpk, so a build can be inspected without rebuilding
-# (result*/debug after `nix build -o`). Skipped unless $DEBUG is set.
+# in the debug output, so a build can be inspected without rebuilding
+# (result*-debug links). Skipped unless $DEBUG is set.
 if [ -n "${DEBUG:-}" ]; then
 mkdir -p "$T/debug"
 cp -r "$T/step-0" "$T/debug/step-0"

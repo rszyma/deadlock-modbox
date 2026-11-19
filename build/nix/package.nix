@@ -26,6 +26,10 @@ let
 in
 stdenvNoCC.mkDerivation {
   inherit name;
+  outputs = [
+    "out"
+    "debug"
+  ];
   src = lib.cleanSource ../..;
   PATCHES = if patches == null then "mods/*.patch" else builtins.toString patches;
   VPKNAME = vpkName;
@@ -49,9 +53,9 @@ stdenvNoCC.mkDerivation {
     source ${./build-phase.sh}
   '';
   installPhase = ''
-    mkdir -p $out
+    mkdir -p $out $debug
     cp "$T"/*.vpk $out/
-    cp -r "$T/debug" $out/ 2>/dev/null || true
-    cp -r "$T/release" $out/ 2>/dev/null || true
+    cp -r "$T/debug" $debug/ 2>/dev/null || true
+    cp -r "$T/release" $debug/ 2>/dev/null || true
   '';
 }

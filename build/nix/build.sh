@@ -72,16 +72,18 @@ else
   RESULT_LINK="result-$(echo "$MODS" | tr ' ' '+')"
 fi
 
-out_path=$(nix shell nixpkgs#nix -c nix-build \
+nix shell nixpkgs#nix -c nix-build \
   --option extra-sandbox-paths "$SANDBOX_PATHS" \
   --argstr mods "$MODS" \
   --argstr gameVersion "$GAMEVERSION" \
   "${CSDK_NIX_ARGS[@]}" \
   -o "$RESULT_LINK" \
-  build/nix \
-  # --no-build-output \
-)
-echo
-echo "debug:" $out_path/debug
+  build/nix
+  # --no-build-output \necho
+out_path=$(readlink -f "$RESULT_LINK")
+drv=$(nix-store -q --deriver "$out_path")
+debug_path=$(nix-store -q --outputs "$drv" | grep -- '-debug$')
+ln -sfn "$debug_path" "$RESULT_LINK-debug"
+echo "debug:" "$debug_path"
 echo "VPK:" $out_path/*.vpk
-echo "7z:" $out_path/release/*.7z
+echo "7z:" "$debug_path"/release/*.7z
