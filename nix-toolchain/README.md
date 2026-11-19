@@ -6,9 +6,9 @@ unpacked into the Nix store.
 
 ## Packages
 
-All of it is exposed (`nix flake show`) and on `PATH` inside
-`nix develop`:
-`deadlock-csdk`, `deadlock-resourcecompiler`, `source2viewer-cli`, `vpk`.
+The flake exposes `deadlock-csdk`, `deadlock-resourcecompiler` and `source2viewer-cli`
+(`nix flake show`).
+`nix develop` puts `deadlock-resourcecompiler`, `Source2Viewer-CLI` and `vpk` on `PATH`.
 
 Binary flavors: `CSDK_BIN=bin|bin_cs2|bin_server|bin_tools` (default
 `bin_cs2` - the only flavor that passes the schema check).
@@ -30,7 +30,7 @@ Run with cwd inside `modroot/game`, headless:
 
 ```bash
 cd modroot/game
-WINEPREFIX=~/.wine64-dxvk WINEDLLOVERRIDES="d3d11,dxgi=n" \
+WINEPREFIX=~/.wine-deadlock-csdk WINEDLLOVERRIDES="d3d11,dxgi=n" \
 VK_ICD_FILENAMES=<mesa>/share/vulkan/icd.d/lvp_icd.x86_64.json \
 LD_LIBRARY_PATH=<vulkan-loader>/lib \
 deadlock-resourcecompiler -v -f -game "Z:\path\to\modroot\game\citadel" \
@@ -43,7 +43,7 @@ unset it where a real GPU exists.
 
 ## Notes
 
-- First build downloads ~2.6GB (hash-pinned; a replaced upstream file
+- First build downloads about 3 GB (hash-pinned; a replaced upstream file
   fails loudly - re-pin the hash in `nix-toolchain/deadlock-csdk/package.nix`).
 - The CSDK predates the current engine. Compiled panorama loads fine;
   other compiled assets (models, materials, textures) are unverified and

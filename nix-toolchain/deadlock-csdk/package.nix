@@ -7,7 +7,7 @@ pkgs.stdenvNoCC.mkDerivation {
   name = "Reduced_CSDK_12";
 
   # NOTE:
-  # The download quite large at ~3GB (6GB unpacked on disk)
+  # The download is large: about 3 GB (6 GB unpacked on disk).
   # We don't need all the files from the Reduced_CSDK_12 so see ../deadlock-trim-csdk instead,
   # which is much smaller at ~100 MB DL (~300 MB unpacked), but works identical for our purposes.
   src = pkgs.fetchurl {
@@ -45,9 +45,8 @@ pkgs.stdenvNoCC.mkDerivation {
 
   # Anyone can confirm the R2 mirror is byte-identical to upstream. Do not trust, verify.
   # 1. Download the zip from google drive yourself:
-  #   * https://deadlockmodding.pages.dev/modding-tools/csdk-12 - original page
-  #   *
-  # 2. Run `nix run .#deadlock-csdk.verify -- <your-download>.zip"`.
+  #    https://deadlockmodding.pages.dev/modding-tools/csdk-12 (original page)
+  # 2. Run `nix run .#verify-csdk -- <your-download>.zip`.
   passthru.verify = pkgs.writeShellApplication {
     name = "verify-deadlock-csdk";
     runtimeInputs = [ pkgs.nix ];
