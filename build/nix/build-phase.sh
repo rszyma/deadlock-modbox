@@ -1,126 +1,190 @@
 #!/usr/bin/env bash
-# modbox build phase: decompile each patched file from the mounted game,
-# apply the patch, compile, stage, pack. Runs inside the nix sandbox;
-# GAME_MOUNT, CSDK_DIR, TMPDIR come from the derivation. PWD is the repo.
+# modbox build phase (spec diffmod/v1, Deadlock profile):
+# parse each DiffMod, decompile its targets from the mounted game, apply the DiffMods in
+# order, compile each changed file once, stage, pack.
+# Runs inside the nix sandbox. GAME_MOUNT, GAME_BUILD, CSDK_DIR, DECOMPILER, PACK_VPK,
+# PATCHES, VPKNAME and TMPDIR come from the derivation. PWD is the source root (mods/).
 set -euo pipefail
+SPEC=diffmod/v1
+die() { echo "error: $*" >&2; exit 1; }
+warn() { echo "warning: $*" >&2; }
 zpath() { echo "Z:${1//\//\\}"; }
 T=$TMPDIR/modroot
-mkdir -p "$T/game/citadel" "$T/game/core/panorama"
+
+# Build record (spec rule 11).
+echo "spec: $SPEC"
+echo "game-build: $GAME_BUILD"
+echo "decompiler: $DECOMPILER"
+
+# Deadlock profile suffix map (spec rule 9). Raw files pass through with no compile.
+is_raw() { case "$1" in *.cfg) return 0 ;; *) return 1 ;; esac }
+compiled_path() {
+  case "$1" in
+    *.css | *.xml | *.js) echo "${1%.*}.v${1##*.}_c" ;;
+    *) return 1 ;;
+  esac
+}
+
+# header_key KEY FILE: the first `# KEY: value` line of the header (spec rules 3-4).
+header_key() {
+  sed -n "/^#/!q; /^#[[:space:]]*$1[[:space:]]*:/{s/^#[^:]*:[[:space:]]*//; s/[[:space:]]*\$//; p; q}" "$2"
+}
+
 [ -f "$GAME_MOUNT/citadel/gameinfo.gi" ] \
-  || { echo "no game mounted at $GAME_MOUNT (see README)" >&2; exit 1; }
+  || die "no game at $GAME_MOUNT (build/nix/build.sh mounts it; check GAME_DIR)"
+CITADEL_VPK="$GAME_MOUNT/citadel/pak01_dir.vpk"
+CORE_VPK="$GAME_MOUNT/core/pak01_dir.vpk"
+[ -f "$CITADEL_VPK" ] || die "no game VPK at $CITADEL_VPK"
+
+# Parse all DiffMods first, so a rule break fails before the slow steps.
+# PT[i]: targets of DiffMod i (newline-separated). NEW[path]: the path is a new file.
+declare -a PT=()
+declare -A NEW=()
+I=0
+for P in $PATCHES; do
+  I=$((I + 1))
+  case "$P" in
+    *.vpk.patch) die "$P: a plain DiffMod name must not end in .vpk.patch (spec rule 12)" ;;
+  esac
+  # git parses the body (spec rule 7): numstat lists the targets, summary the file ops.
+  STAT=$(git apply --numstat --summary "$P" 2>&1) || die "$P is not a valid DiffMod: $STAT"
+  OPS=$(printf '%s\n' "$STAT" | grep -E '^ (delete mode|rename|copy|mode change) ' || true)
+  [ -z "$OPS" ] || die "$P: renames, copies, deletes and mode changes are not allowed (spec rule 8):"$'\n'"$OPS"
+  PT[I]=$(printf '%s\n' "$STAT" | sed -n 's/^[0-9-]*\t[0-9-]*\t//p')
+  while IFS= read -r D; do
+    NEW[$D]=1
+  done < <(printf '%s\n' "$STAT" | sed -n 's/^ create mode [0-7]* //p')
+  KEY_SPEC=$(header_key spec "$P")
+  KEY_DEC=$(header_key decompiler "$P")
+  if [ -n "$KEY_SPEC" ] && [ "$KEY_SPEC" != "$SPEC" ]; then
+    warn "$P: unknown spec version $KEY_SPEC, building as $SPEC"
+  fi
+  if [ -n "$KEY_DEC" ] && [ "$KEY_DEC" != "$DECOMPILER" ]; then
+    warn "$P: made with decompiler $KEY_DEC, this build uses $DECOMPILER"
+  fi
+  while IFS= read -r D; do
+    case "$D" in
+      /* | .. | ../* | */.. | */../*) die "$P: $D leaves the VPK root (spec rule 8)" ;;
+    esac
+    is_raw "$D" || compiled_path "$D" >/dev/null \
+      || die "$P: $D: the Deadlock profile maps no suffix .${D##*.} (spec rule 9)"
+  done <<<"${PT[I]}"
+done
+ALL=$(printf '%s\n' "${PT[@]}" | sort -u)
+
+mkdir -p "$T/game/citadel" "$T/game/core/panorama"
 cp "$GAME_MOUNT/citadel/gameinfo.gi" "$T/game/citadel/gameinfo.gi"
 ln -s "$CSDK_DIR/game/citadel/bin" "$T/game/citadel/bin"
 cp "$CSDK_DIR/game/core/panorama/panorama_config.txt" \
   "$T/game/core/panorama/panorama_config.txt"
 export WINEPREFIX="$T/wineprefix"
 export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
-# Raw files (no compiled _c form in the VPK, e.g. .cfg keybind files)
-# are extracted as-is and staged without resourcecompiler.
-is_raw() { case "$1" in *.cfg) return 0;; *) return 1;; esac; }
-N=0
-# Cumulative steps: step-0 holds fresh decompiles of every target across
-# all patches; step-N is a copy of step-(N-1) with patch N applied, so
-# same-file patches compose with no bookkeeping. Overlapping hunks fail
-# loudly at git apply below. Patches may also add new files
-# (--- /dev/null + +++ b/<path>, e.g. a new panorama script): those are
-# skipped at decompile time and created by git apply instead.
-# NOTE: the `|| true`s below are load-bearing: with `set -euo pipefail`
-# a grep with no matches would otherwise kill the build silently.
-ALLTARGETS=$(for P in $PATCHES; do grep '^+++ b/' "$P" || true; done | sed 's|^+++ b/||' | grep -v '^/dev/null$' | sort -u || true)
-NEWFILES=$(for P in $PATCHES; do grep -A1 '^--- /dev/null' "$P" || true; done | grep '^+++ b/' | sed 's|^+++ b/||' | sort -u || true)
+
+# step-0 holds the game copy of each target. Source2Viewer-CLI writes each file at its
+# VPK path (cleartext suffix) under the -o folder, so fresh-0/<target> is exact.
+# New files have no game copy: git apply creates them.
 mkdir -p "$T/step-0" "$T/fresh-0"
-[ -f "$GAME_MOUNT/citadel/pak01_dir.vpk" ] \
-  || { echo "no input VPK at $GAME_MOUNT/citadel/pak01_dir.vpk (check /tmp/deadlock mount)" >&2; ls -l "$GAME_MOUNT/citadel" >&2; exit 1; }
-for D in $ALLTARGETS; do
-  # Line-based match: $NEWFILES is newline-separated, so a space-wrapped
-  # case pattern would miss every entry but the last.
-  if [ -n "$NEWFILES" ] && printf '%s\n' "$NEWFILES" | grep -qxF "$D"; then
+TO_DECOMPILE=()
+while IFS= read -r D; do
+  if [ -n "${NEW[$D]:-}" ]; then
     echo "+ new file $D (no decompile)" >&2
-    continue
-  fi
-  if is_raw "$D"; then
+  elif is_raw "$D"; then
     echo "+ extracting raw $D" >&2
-    if ! Source2Viewer-CLI \
-      -i "$GAME_MOUNT/citadel/pak01_dir.vpk" -o "$T/fresh-0" \
-      -f "$D"; then
-      echo "extract command failed for $D" >&2; exit 1
+    Source2Viewer-CLI -i "$CITADEL_VPK" -o "$T/fresh-0" -f "$D" \
+      || die "extract command failed for $D"
+    if [ ! -f "$T/fresh-0/$D" ]; then
+      # Not in the citadel pack: read the core pack next (Deadlock profile).
+      Source2Viewer-CLI -i "$CORE_VPK" -o "$T/fresh-0" -f "$D" \
+        || die "extract command failed for $D"
     fi
-    CSS=$(find "$T/fresh-0" -name "$(basename "$D")" | head -n 1)
-    if [ -z "$CSS" ]; then
-      # Not in the citadel pack: try the core pack
-      # (e.g. panorama/default_keybinds.cfg).
-      if ! Source2Viewer-CLI \
-        -i "$GAME_MOUNT/core/pak01_dir.vpk" -o "$T/fresh-0" \
-        -f "$D"; then
-        echo "extract command failed for $D" >&2; exit 1
-      fi
-      CSS=$(find "$T/fresh-0" -name "$(basename "$D")" | head -n 1)
-    fi
-    [ -n "$CSS" ] || { echo "extract produced no $D" >&2; exit 1; }
-    mkdir -p "$T/step-0/$(dirname "$D")"
-    cp "$CSS" "$T/step-0/$D"
-    continue
+  else
+    TO_DECOMPILE+=("$(compiled_path "$D")")
   fi
-  TARGET=$(echo "$D" | sed 's|\.\([a-z]*\)$|.v\1_c|')
+done <<<"$ALL"
+if [ "${#TO_DECOMPILE[@]}" -gt 0 ]; then
+  echo "+ decompiling ${TO_DECOMPILE[*]}" >&2
+  FILTER=$(IFS=,; echo "${TO_DECOMPILE[*]}")
+  Source2Viewer-CLI -i "$CITADEL_VPK" -d -o "$T/fresh-0" -f "$FILTER" \
+    || die "decompile command failed"
+fi
+while IFS= read -r D; do
+  [ -z "${NEW[$D]:-}" ] || continue
+  [ -f "$T/fresh-0/$D" ] || die "the game VPKs hold no $D"
   mkdir -p "$T/step-0/$(dirname "$D")"
-  echo "+ decompiling $TARGET" >&2
-  if ! Source2Viewer-CLI \
-    -i "$GAME_MOUNT/citadel/pak01_dir.vpk" -d -o "$T/fresh-0" \
-    -f "$TARGET"; then
-    echo "decompile command failed for $D ($TARGET)" >&2; exit 1
-  fi
-  CSS=$(find "$T/fresh-0" -name "$(basename "$D")" | head -n 1)
-  [ -n "$CSS" ] || { echo "decompile produced no $D" >&2; exit 1; }
-  cp "$CSS" "$T/step-0/$D"
-done
+  cp "$T/fresh-0/$D" "$T/step-0/$D"
+done <<<"$ALL"
+
+# step-N is a copy of step-(N-1) with DiffMod N applied, so DiffMods that change the
+# same file compose in the order given (spec rule 10).
+N=0
 for P in $PATCHES; do
   N=$((N + 1)); W="$T/step-$N"
   mkdir -p "$W"; cp -r "$T/step-$((N - 1))/." "$W/"
-  TARGETS=$(grep '^+++ b/' "$P" | sed 's|^+++ b/||' | grep -v '^/dev/null$' || true)
-  [ -n "$TARGETS" ] || { echo "$P has no diff paths" >&2; exit 1; }
-  git -C "$W" apply "$PWD/$P" \
-    || { echo "$P does not apply - re-derive it (or it conflicts with an earlier patch)" >&2; exit 1; }
-  for D in $TARGETS; do
-    if is_raw "$D"; then
-      echo "+ staging raw $D (no compile)" >&2
-      mkdir -p "$T/stage/$(dirname "$D")"
-      cp "$W/$D" "$T/stage/$D"
-      continue
+  if ! git -C "$W" apply "$PWD/$P"; then
+    TGT=$(printf '%s\n' "${PT[N]}" | paste -sd ' ')
+    if [ "$N" -gt 1 ] && git -C "$T/step-0" apply --check "$PWD/$P" 2>/dev/null; then
+      # It fits the game files, so an earlier DiffMod on a shared target breaks it.
+      EARLIER=""; J=0
+      for Q in $PATCHES; do
+        J=$((J + 1)); [ "$J" -lt "$N" ] || break
+        if printf '%s\n' "${PT[J]}" | grep -qxFf <(printf '%s\n' "${PT[N]}"); then
+          EARLIER="${EARLIER:+$EARLIER, }$Q"
+        fi
+      done
+      die "$P clashes with $EARLIER (targets: $TGT); change the mod order or fix one of them"
     fi
-    TARGET=$(echo "$D" | sed 's|\.\([a-z]*\)$|.v\1_c|')
-    TB=$(basename "$TARGET")
-    mkdir -p "$T/content/citadel_addons/badge/$(dirname "$D")"
-    cp "$W/$D" "$T/content/citadel_addons/badge/$D"
-    (cd "$T/game" && deadlock-resourcecompiler -v -f \
-      -game "$(zpath "$T/game/citadel")" \
-      "$(zpath "$T/content/citadel_addons/badge/$D")")
-    OUT=$(find "$T/game" -name "$TB" | head -n 1)
-    [ -n "$OUT" ] || { echo "compile produced no $TB" >&2; exit 1; }
-    mkdir -p "$T/stage/$(dirname "$TARGET")"
-    cp "$OUT" "$T/stage/$TARGET"
-  done
+    die "$P does not apply to game build $GAME_BUILD (targets: $TGT); re-derive it"
+  fi
 done
+FINAL="$T/step-$N"
+
+# Compile each target once, from its final state.
+ADDON=citadel_addons/badge
+while IFS= read -r D; do
+  if is_raw "$D"; then
+    echo "+ staging raw $D (no compile)" >&2
+    mkdir -p "$T/stage/$(dirname "$D")"
+    cp "$FINAL/$D" "$T/stage/$D"
+    continue
+  fi
+  C=$(compiled_path "$D")
+  mkdir -p "$T/content/$ADDON/$(dirname "$D")"
+  cp "$FINAL/$D" "$T/content/$ADDON/$D"
+  (cd "$T/game" && deadlock-resourcecompiler -v -f \
+    -game "$(zpath "$T/game/citadel")" \
+    "$(zpath "$T/content/$ADDON/$D")")
+  OUT="$T/game/$ADDON/$C"
+  if [ ! -f "$OUT" ]; then
+    find "$T/game/citadel_addons" -type f >&2 2>/dev/null || true
+    die "compile produced no $OUT"
+  fi
+  mkdir -p "$T/stage/$(dirname "$C")"
+  cp "$OUT" "$T/stage/$C"
+done <<<"$ALL"
+
 # Pack with the python vpk library (scriptable and fast), in sorted order:
 # same DiffMods plus same game build give the same VPK bytes.
 python3 "$PACK_VPK" "$T/stage" "$T/$VPKNAME"
-# Debug: ship the patched cleartext sources plus the compiled outputs
-# in the debug output, so a build can be inspected without rebuilding
-# (result*-debug links). Skipped unless $DEBUG is set.
+
+# Debug: the patched cleartext sources plus the compiled outputs, so a build can be
+# inspected without a rebuild (result*-debug links). step-0 is the game copy, step-1..N
+# are the patched states (each with the DiffMod that made it), step-N+1 is the staged
+# build result. Skipped unless $DEBUG is set.
 if [ -n "${DEBUG:-}" ]; then
-mkdir -p "$T/debug"
-cp -r "$T/step-0" "$T/debug/step-0"
-N=0
-# Steps are continuous: step-0 fresh, step-1..N patched states (each with
-# the patch file that produced it), final step-N+1 the staged build result.
-for P in $PATCHES; do
+  mkdir -p "$T/debug"
+  printf 'spec: %s\ngame-build: %s\ndecompiler: %s\n' \
+    "$SPEC" "$GAME_BUILD" "$DECOMPILER" >"$T/debug/build-info.txt"
+  cp -r "$T/step-0" "$T/debug/step-0"
+  N=0
+  for P in $PATCHES; do
+    N=$((N + 1))
+    cp -r "$T/step-$N" "$T/debug/step-$N"
+    cp "$PWD/$P" "$T/debug/step-$N/"
+  done
   N=$((N + 1))
-  cp -r "$T/step-$N" "$T/debug/step-$N"
-  cp "$PWD/$P" "$T/debug/step-$N/"
-done
-N=$((N + 1))
-cp -r "$T/stage" "$T/debug/step-$N"
+  cp -r "$T/stage" "$T/debug/step-$N"
 fi
-# Release: 7zipped archive of the vpk for upload (result*/release).
+# Release: 7zipped archive of the vpk for upload (result*-debug/release).
 # Skipped unless $RELEASE is set.
 if [ -n "${RELEASE:-}" ]; then
   mkdir -p "$T/release"
