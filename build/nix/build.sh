@@ -72,7 +72,8 @@ else
   RESULT_LINK="result-$(echo "$MODS" | tr ' ' '+')"
 fi
 
-nix shell nixpkgs#nix -c nix-build \
+# N.B. `nix build` doesn't support argstr.
+nix-build \
   --option extra-sandbox-paths "$SANDBOX_PATHS" \
   --argstr mods "$MODS" \
   --argstr gameVersion "$GAMEVERSION" \

@@ -4,6 +4,15 @@
 # any account via `nix run .#verify-csdk -- <gdrive zip>`; verify-csdk-trim
 # below rebuilds locally, so run it from this repo with GAME_DIR set.
 
+# Build a mod VPK from ./mods (all patches, or just the named ones):
+#   just build remove-esc-menu-animations
+# Needs GAME_DIR (and optionally CSDK_PATH) in env, same as build/nix/build.sh.
+build *mods:
+    ./build/nix/build.sh {{ mods }}
+
+build1 *mods:
+    GAME_DIR=/mnt/deadlock ./build/nix/build.sh {{ mods }}
+
 TRIM_URL := env_var_or_default("TRIM_URL", "https://pub-e045e6ce2c594838a11c17b87ad8cfa5.r2.dev/deadlock-trim-csdk.tar.zst")
 
 [private]
