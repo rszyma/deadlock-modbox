@@ -100,6 +100,8 @@ for P in $PATCHES; do
     cp "$OUT" "$T/stage/$TARGET"
   done
 done
+# Pack with the python vpk tool instead of the CSDK CSDKCfgVPK.exe:
+# scriptable and fast.
 vpk "$T/$VPKNAME" -c "$T/stage"
 # Debug: ship the patched cleartext sources plus the compiled outputs
 # alongside the vpk, so a build can be inspected without rebuilding

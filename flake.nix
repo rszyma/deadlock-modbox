@@ -13,9 +13,6 @@
         deadlock-resourcecompiler =
           (pkgs.callPackage ./nix-toolchain/make-csdk-tool/package.nix { }) "deadlock-resourcecompiler"
             "resourcecompiler.exe";
-        deadlock-cfgvpk =
-          (pkgs.callPackage ./nix-toolchain/make-csdk-tool/package.nix { }) "deadlock-cfgvpk"
-            "CSDKCfgVPK.exe";
       };
     in
     {
@@ -25,7 +22,6 @@
         inherit (toolchain pkgs)
           deadlock-csdk
           deadlock-resourcecompiler
-          deadlock-cfgvpk
           source2viewer-cli
           ;
       });
