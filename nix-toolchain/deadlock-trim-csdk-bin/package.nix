@@ -23,6 +23,11 @@ pkgs.stdenvNoCC.mkDerivation {
     inherit hash;
   };
 
+  # The tarball holds ./game at its top: unpack in place, so `game` stays a subdir.
+  sourceRoot = ".";
+  # stdenv does not ship zstd, and tar needs it for .tar.zst.
+  nativeBuildInputs = [ pkgs.zstd ];
+
   # Windows binaries + data only: skip ELF fixup/strip.
   dontFixup = true;
 
